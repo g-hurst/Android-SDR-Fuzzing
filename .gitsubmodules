@@ -1,0 +1,3 @@
+[submodule "open5gs"]
+	path = app/open5gs/
+	url = https://github.com/open5gs/open5gs.git
