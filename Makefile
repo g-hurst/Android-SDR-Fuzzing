@@ -5,7 +5,7 @@ SRSRAN_DOCKER_PATH = $(SRSRAN_REPO_DIR)/docker/docker-compose.yml
 # checks that the repository directory exists and clones open5gs if it does not
 .phony: srsran-check-clone
 srsran-check-clone:
-ifeq ($(wildcard $(SRSRAN_REPO_DIR)),)
+ifeq ($(wildcard $(SRSRAN_REPO_DIR))/*,)
 	@echo "Cloning repository $(SRSRAN_REPO_URL)..."
 	git clone $(SRSRAN_REPO_URL) $(SRSRAN_REPO_DIR)
 else
