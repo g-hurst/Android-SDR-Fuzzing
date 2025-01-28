@@ -1,0 +1,3 @@
+[submodule "srsRAN_Project"]
+	path = app/srsRAN_Project/
+	url = https://github.com/srsran/srsRAN_Project.git
