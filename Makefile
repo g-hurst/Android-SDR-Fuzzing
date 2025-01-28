@@ -22,6 +22,15 @@ srsran-run: srsran-check-clone
 	docker compose -f $(SRSRAN_DOCKER_PATH) up
 
 
+.phony: srsran-reclone
+srsran-reclone:
+# delete the directory if it exists
+ifneq ($(wildcard $(SRSRAN_REPO_DIR)),)
+	rm -rf $(SRSRAN_REPO_DIR)
+endif
+# clone the repo
+	$(MAKE) srsran-check-clone
+
 # removes pruned docker images that are >24h old
 .phony: docker-clean-images
 docker-clean-images:
