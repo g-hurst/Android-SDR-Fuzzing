@@ -1,8 +1,9 @@
 # link to docs https://github.com/srsran/srsRAN_Project/tree/main/docker
-SRSRAN_REPO_URL    = https://github.com/srsran/srsRAN_Project.git
+# this is the ssh url of the forked repo - make sure to have key setup
+SRSRAN_REPO_URL    = git@github.com:g-hurst/srsRAN_Project.git 
 SRSRAN_REPO_DIR    = app/srsRAN_Project
 SRSRAN_DOCKER_PATH = $(SRSRAN_REPO_DIR)/docker/docker-compose.yml
-# checks that the repository directory exists and clones open5gs if it does not
+# cone repo if needed
 .phony: srsran-check-clone
 srsran-check-clone:
 ifeq ($(wildcard $(SRSRAN_REPO_DIR)),)
