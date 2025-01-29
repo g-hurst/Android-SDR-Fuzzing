@@ -1,7 +1,7 @@
 # link to docs https://github.com/srsran/srsRAN_Project/tree/main/docker
 # this is the ssh url of the forked repo - make sure to have key setup
 SRSRAN_REPO_URL    = git@github.com:g-hurst/srsRAN_Project.git 
-SRSRAN_REPO_DIR    = app/srsRAN_Project
+SRSRAN_REPO_DIR    = app/controller/srsRAN_Project
 SRSRAN_DOCKER_PATH = $(SRSRAN_REPO_DIR)/docker/docker-compose.yml
 # cone repo if needed
 .phony: srsran-check-clone
