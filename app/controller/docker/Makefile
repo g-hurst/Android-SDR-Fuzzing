@@ -19,6 +19,8 @@ else ifeq ($(wildcard $(SRSRAN_REPO_DIR)/*),)
 else
 	@echo "Repository $(REPO_DIR) already exists."
 endif
+
+
 .phony: srsran-run
 srsran-run: srsran-check-clone
 	cp -f $(SUBDIR)/../configs/* $(SRSRAN_REPO_DIR)/configs/
