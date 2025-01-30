@@ -11,11 +11,11 @@ srsran-check-clone:
 ifeq ($(wildcard $(SRSRAN_REPO_DIR)),)
 # the repository directory does not exist
 	@echo "Cloning repository $(SRSRAN_REPO_URL)..."
-	git clone $(SRSRAN_REPO_URL) $(SRSRAN_REPO_DIR)
+	git clone $(SRSRAN_REPO_URL) $(SRSRAN_REPO_DIR) || echo "failed to clone - is your ssh key added to github?"
 else ifeq ($(wildcard $(SRSRAN_REPO_DIR)/*),)
 # the repository directory is empty
-		@echo "Cloning repository $(SRSRAN_REPO_URL)..."
-		git clone $(SRSRAN_REPO_URL) $(SRSRAN_REPO_DIR)
+	@echo "Cloning repository $(SRSRAN_REPO_URL)..."
+	git clone $(SRSRAN_REPO_URL) $(SRSRAN_REPO_DIR) || echo "failed to clone - is your ssh key added to github?"
 else
 	@echo "Repository $(REPO_DIR) already exists."
 endif
