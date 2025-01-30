@@ -1,11 +1,10 @@
-SUBDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-
+SUBDIR = $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 # link to docs https://github.com/srsran/srsRAN_Project/tree/main/docker
 # this is the ssh url of the forked repo - make sure to have key setup
 SRSRAN_REPO_URL    = git@github.com:g-hurst/srsRAN_Project.git 
-SRSRAN_REPO_DIR    = $(SUBDIR)/srsRAN_Project
-SRSRAN_DOCKER_PATH = $(SRSRAN_REPO_DIR)/docker/docker-compose.yml
+SRSRAN_REPO_DIR    = $(SUBDIR)/../srsRAN_Project
+SRSRAN_DOCKER_PATH = $(SUBDIR)/docker-compose.yml
 # cone repo if needed
 .phony: srsran-check-clone
 srsran-check-clone:
@@ -22,6 +21,7 @@ else
 endif
 .phony: srsran-run
 srsran-run: srsran-check-clone
+	cp -f $(SUBDIR)/../configs/* $(SRSRAN_REPO_DIR)/configs/
 	docker compose -f $(SRSRAN_DOCKER_PATH) up
 
 
