@@ -1,17 +1,23 @@
 name: Makefile CI
 
 on: push
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Build (and run) project
-      run: make
+      - uses: actions/checkout@v4
+      - name: Build (and run) project
+        run: make
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: app/controller/docker/
+
   test:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Test project
-      run: make test
+      - uses: actions/checkout@v4
+      - name: Test project
+        run: make test
