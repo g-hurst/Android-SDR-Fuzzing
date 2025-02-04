@@ -1,6 +1,6 @@
 include app/controller/docker/Makefile
 
-.DEFAULT_GOAL := srsran-run
+.DEFAULT_GOAL := srsran-build
 
 .PHONY: test
 test:

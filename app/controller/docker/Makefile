@@ -22,10 +22,14 @@ endif
 
 
 .PHONY: srsran-run
-srsran-run: srsran-check-clone
+srsran-run: srsran-check-clone srsran-build
 	cp -f $(SUBDIR)/../configs/* $(SRSRAN_REPO_DIR)/configs/
 	docker compose -f $(SRSRAN_DOCKER_PATH) up
 
+.PHONY: srsran-build
+srsran-build: srsran-check-clone
+	cp -f $(SUBDIR)/../configs/* $(SRSRAN_REPO_DIR)/configs/
+	docker compose -f $(SRSRAN_DOCKER_PATH) build
 
 .PHONY: srsran-reclone
 srsran-reclone:
