@@ -1,0 +1,5 @@
+include:
+    - path:
+        - ../srsRAN_Project/docker/docker-compose.yml
+        - compose.override.yml
+

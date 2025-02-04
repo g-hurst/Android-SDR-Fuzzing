@@ -1,0 +1,3 @@
+configs:
+  gnb_config.yml:
+    file: ../configs/gnb_config.yml
