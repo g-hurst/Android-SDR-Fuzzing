@@ -6,7 +6,7 @@ SRSRAN_REPO_URL    = git@github.com:g-hurst/srsRAN_Project.git
 SRSRAN_REPO_DIR    = $(SUBDIR)/../srsRAN_Project
 SRSRAN_DOCKER_PATH = $(SUBDIR)/docker-compose.yml
 # cone repo if needed
-.phony: srsran-check-clone
+.PHONY: srsran-check-clone
 srsran-check-clone:
 ifeq ($(wildcard $(SRSRAN_REPO_DIR)),)
 # the repository directory does not exist
@@ -21,13 +21,13 @@ else
 endif
 
 
-.phony: srsran-run
+.PHONY: srsran-run
 srsran-run: srsran-check-clone
 	cp -f $(SUBDIR)/../configs/* $(SRSRAN_REPO_DIR)/configs/
 	docker compose -f $(SRSRAN_DOCKER_PATH) up
 
 
-.phony: srsran-reclone
+.PHONY: srsran-reclone
 srsran-reclone:
 # delete the directory if it exists
 ifneq ($(wildcard $(SRSRAN_REPO_DIR)),)
@@ -37,6 +37,6 @@ endif
 	$(MAKE) srsran-check-clone
 
 # removes pruned docker images that are >24h old
-.phony: docker-clean-images
+.PHONY: docker-clean-images
 docker-clean-images:
 	docker image prune -a --filter "until=24h"
