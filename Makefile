@@ -4,7 +4,7 @@ include app/controller/docker/Makefile
 
 .PHONY: test
 test:
-	@echo 'there curretnly are no tests, but we will write them...'
+	pytest --ignore=$(SRSRAN_REPO_DIR)
 
 .PHONY: clean
 clean:
