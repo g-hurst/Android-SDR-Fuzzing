@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build (and run) project
-        run: make
+        run: make -j$(nproc)
       - name: run make
         run: |
           docker save $(docker images -q) > docker-images.tar
