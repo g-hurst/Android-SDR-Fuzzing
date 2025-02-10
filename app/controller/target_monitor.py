@@ -9,12 +9,16 @@ class Target_Monitor(threading.Thread):
     def __init__(self):
         super().__init__()
         self._stay_alive  = threading.Event()
-        self.adb_key_path = '.android/adbkey' #TODO: this should probably be configurable
+        self.adb_key_path = os.path.join(
+                                os.path.dirname(os.path.abspath(__file__)),
+                                '.android/adbkey'
+                                ) #TODO: this should probably be configurable
         self.device       = None
 
     def get_adb_signer(self) -> PythonRSASigner:
         # create dir and keys if needed
         key_dir = os.path.dirname(self.adb_key_path)
+        print(key_dir)
         if not os.path.exists(key_dir):
             os.mkdir(key_dir)
         if not os.path.exists(self.adb_key_path):
@@ -29,7 +33,9 @@ class Target_Monitor(threading.Thread):
 
     def adb_connect(self):
         adb_signer = self.get_adb_signer()
-        self.device.connect(rsa_keys=[adb_signer], auth_timeout_s=3.0)
+        print(f'{self.__class__.__name__}: Requesting connection to device')
+        self.device.connect(rsa_keys=[adb_signer], auth_timeout_s=15.0)
+        print(f'{self.__class__.__name__}: Connected')
 
     def adb_exec(self, cmd:str) -> str:
         return self.device.shell(cmd)

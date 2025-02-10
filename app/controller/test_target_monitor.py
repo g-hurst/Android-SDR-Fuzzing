@@ -20,7 +20,7 @@ def test_adb_connect(mock_get_signer, mock_connect, target_monitor):
     target_monitor.adb_connect()
     
     mock_get_signer.assert_called_once()
-    target_monitor.device.connect.assert_called_once_with(rsa_keys=[mock_get_signer.return_value], auth_timeout_s=3.0)
+    target_monitor.device.connect.assert_called_once_with(rsa_keys=[mock_get_signer.return_value], auth_timeout_s=15.0)
 
 @patch("adb_shell.adb_device.AdbDeviceUsb.shell", return_value="mock_output")
 def test_adb_exec(mock_shell, target_monitor):
