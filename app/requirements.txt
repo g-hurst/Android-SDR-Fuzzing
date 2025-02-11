@@ -1,3 +1,4 @@
 adb-shell
+adb-shell[usb]
 pytest
 
