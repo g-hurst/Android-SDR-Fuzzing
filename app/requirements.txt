@@ -1,4 +1,5 @@
 adb-shell
 adb-shell[usb]
 pytest
+flake8
 
