@@ -3,6 +3,15 @@ name: Makefile CI
 on: push
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install flake8 from requirements.txt
+        run: make setup
+      - name: run flake8 linter
+        run: flake8  ./
+
   build:
     runs-on: ubuntu-latest
     steps:
