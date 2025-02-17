@@ -3,12 +3,16 @@
 import time
 
 from controller.target_monitor import Target_Monitor
+from transmitter.transmitter import Transmitter
 
 def main():
 
     # create monitor thread and start it
     monitor = Target_Monitor()
     monitor.start()
+
+    transmitter = Transmitter()
+    transmitter.start()
 
     # just putting this here for now to fill later
     while True:
@@ -20,6 +24,7 @@ def main():
 
     # cleanup threads
     monitor.kill()
+    transmitter.kill()
 
     print('App complete')
 
