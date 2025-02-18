@@ -14,6 +14,7 @@ class Target_Monitor(threading.Thread):
                                 '.android/adbkey'
                                 ) #TODO: this should probably be configurable
         self.device       = None
+        self.executor     = None
 
     def get_adb_signer(self) -> PythonRSASigner:
         # create dir and keys if needed
@@ -37,22 +38,12 @@ class Target_Monitor(threading.Thread):
         self.device.connect(rsa_keys=[adb_signer], auth_timeout_s=15.0)
         print(f'{self.__class__.__name__}: Connected')
 
-    def adb_exec(self, cmd:str) -> str:
-        return self.device.shell(cmd)
-    
-    def input_commands(self):
-        while True:
-            cmd = input("Enter command: ")
-            if cmd == 'exit':
-                break
-            print(self.adb_exec(cmd))
-
     def run(self):
         # connect to the phone
         try:
             self.device = AdbDeviceUsb()
             self.adb_connect()
-            self.input_commands()
+            self.executor = ADB_Executor(self.device)
         except Exception as e:
             print(f'{self.__class__.__name__}: Failed to connect to Android Device')
             print(f'{self.__class__.__name__}: {e}')
@@ -69,3 +60,25 @@ class Target_Monitor(threading.Thread):
 
     def kill(self):
         self._stay_alive.clear()   
+
+class ADB_Executor():
+    def __init__(self, device):
+        self.device = device
+        self.command_stream()
+
+    def adb_exec(self, cmd:str) -> str:
+        return self.device.shell(cmd)
+    
+    def command_stream(self):
+        while True:
+            cmd = input("Enter command: ")
+            if cmd == 'exit':
+                break
+            if cmd == 'get status':
+                self.get_phone_stats()
+            print(self.adb_exec(cmd))
+        print("Exiting stream...")
+    
+    def get_phone_stats(self):
+        print("Battery: ", self.adb_exec('dumpsys battery | grep "scale"'))
+        return
