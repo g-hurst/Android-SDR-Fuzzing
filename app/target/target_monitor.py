@@ -39,12 +39,20 @@ class Target_Monitor(threading.Thread):
 
     def adb_exec(self, cmd:str) -> str:
         return self.device.shell(cmd)
+    
+    def input_commands(self):
+        while True:
+            cmd = input("Enter command: ")
+            if cmd == 'exit':
+                break
+            print(self.adb_exec(cmd))
 
     def run(self):
         # connect to the phone
         try:
             self.device = AdbDeviceUsb()
             self.adb_connect()
+            self.input_commands()
         except Exception as e:
             print(f'{self.__class__.__name__}: Failed to connect to Android Device')
             print(f'{self.__class__.__name__}: {e}')

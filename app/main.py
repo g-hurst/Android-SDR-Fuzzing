@@ -2,7 +2,7 @@
 
 import time
 
-from controller.target_monitor import Target_Monitor
+from target.target_monitor import Target_Monitor
 
 def main():
 
