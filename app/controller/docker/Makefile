@@ -22,7 +22,7 @@ endif
 
 
 .PHONY: srsran-run
-srsran-run: srsran-check-clone srsran-build
+srsran-run: 
 	cp -f $(SUBDIR)/../configs/* $(SRSRAN_REPO_DIR)/configs/
 	docker compose -f $(SRSRAN_DOCKER_PATH) up
 
@@ -44,3 +44,14 @@ endif
 .PHONY: docker-clean-images
 docker-clean-images:
 	docker image prune -a --filter "until=24h"
+
+.PHONY: docker-network-clear
+docker-network-clear:
+	@if [ "$$(id -u)" -ne 0 ]; then \
+		echo "Error: $(MAKECMDGOALS) must be run as sudo"; \
+		exit 1; \
+	fi
+	sudo systemctl stop docker
+	sudo rm -rf /var/lib/docker/network/
+	sudo systemctl start docker
+

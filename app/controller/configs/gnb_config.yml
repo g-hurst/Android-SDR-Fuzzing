@@ -16,7 +16,7 @@ cu_cp:
 
 ru_sdr:
   device_driver: uhd
-  device_args: type=n2xx
+  device_args: type=usrp2, addr=192.168.20.2
   clock: gpsdo
   sync: gpsdo
   srate: 30.72
