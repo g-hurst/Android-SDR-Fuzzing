@@ -17,8 +17,8 @@ cu_cp:
 ru_sdr:
   device_driver: uhd
   device_args: type=usrp2, addr=192.168.20.2
-  clock: gpsdo
-  sync: gpsdo
+  clock: external
+  sync: external
   srate: 30.72
   tx_gain: 35
   rx_gain: 60
