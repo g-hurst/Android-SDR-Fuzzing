@@ -3,15 +3,16 @@ import subprocess as sp
 import docker
 import time
 
+
 class Transmitter(threading.Thread):
     def __init__(self):
         super().__init__()
-        self._stay_alive  = threading.Event()
+        self._stay_alive = threading.Event()
 
     def run(self):
         compose_proc = sp.Popen(['cd controller/docker/ && docker compose up'],
-                                 shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
-        
+                                shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
+
         self._stay_alive.set()
         try:
             while self._stay_alive.is_set():
@@ -28,7 +29,7 @@ class Transmitter(threading.Thread):
             return client.containers.list()
         except Exception as e:
             print(e)
-            return None 
+            return None
 
     def kill(self):
-        self._stay_alive.clear()   
+        self._stay_alive.clear()

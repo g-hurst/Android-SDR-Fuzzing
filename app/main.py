@@ -5,6 +5,7 @@ import time
 from controller.target_monitor import Target_Monitor
 from transmitter.transmitter import Transmitter
 
+
 def main():
 
     # create monitor thread and start it
@@ -18,8 +19,8 @@ def main():
     while True:
         try:
             time.sleep(0.1)
-        except:
-            print('keyboard interrupt in main')
+        except Exception as e:
+            print(f'Error in main loop: {e}')
             break
 
     # cleanup threads
@@ -27,6 +28,7 @@ def main():
     transmitter.kill()
 
     print('App complete')
+
 
 if __name__ == '__main__':
     main()
