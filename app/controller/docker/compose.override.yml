@@ -13,7 +13,7 @@ networks:
     sdr_net:
         driver: macvlan
         driver_opts:
-            parent: enx00e04c681f5a
+            parent: ${NET_DEV:-enx00e04c681f5a}
         ipam:
             config:
                 - subnet:  192.168.20.0/24
