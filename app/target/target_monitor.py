@@ -5,6 +5,7 @@ from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from adb_shell.adb_device import AdbDeviceUsb
 
+
 class Target_Monitor(threading.Thread):
     def __init__(self):
         super().__init__()
@@ -12,9 +13,9 @@ class Target_Monitor(threading.Thread):
         self.adb_key_path = os.path.join(
                                 os.path.dirname(os.path.abspath(__file__)),
                                 '.android/adbkey'
-                                ) #TODO: this should probably be configurable
-        self.device       = None
-        self.executor     = None
+                                )  # TODO: this should probably be configurable
+        self.device = None
+        self.executor = None
 
     def get_adb_signer(self) -> PythonRSASigner:
         # create dir and keys if needed
@@ -61,14 +62,15 @@ class Target_Monitor(threading.Thread):
     def kill(self):
         self._stay_alive.clear()   
 
+
 class ADB_Executor():
     def __init__(self, device):
         self.device = device
         self.command_stream()
 
-    def adb_exec(self, cmd:str) -> str:
+    def adb_exec(self, cmd: str) -> str:
         return self.device.shell(cmd)
-    
+
     def command_stream(self):
         while True:
             cmd = input("Enter command: ")
@@ -78,7 +80,7 @@ class ADB_Executor():
                 self.get_phone_stats()
             print(self.adb_exec(cmd))
         print("Exiting stream...")
-    
+
     def get_phone_stats(self):
         print("Battery: ", self.adb_exec('dumpsys battery | grep "scale"'))
         return

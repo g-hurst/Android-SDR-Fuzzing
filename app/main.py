@@ -5,6 +5,7 @@ import time
 from target.target_monitor import Target_Monitor
 from transmitter.transmitter import Transmitter
 
+
 def main():
 
     # create monitor thread and start it
