@@ -1,5 +1,8 @@
 adb-shell
 adb-shell[usb]
+docker
+
 pytest
+
 flake8
 
