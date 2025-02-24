@@ -9,7 +9,7 @@ from adb_shell.adb_device import AdbDeviceUsb
 class Target_Monitor(threading.Thread):
     def __init__(self):
         super().__init__()
-        self._stay_alive  = threading.Event()
+        self._stay_alive = threading.Event()
         self.adb_key_path = os.path.join(
                                 os.path.dirname(os.path.abspath(__file__)),
                                 '.android/adbkey'
@@ -48,7 +48,7 @@ class Target_Monitor(threading.Thread):
         except Exception as e:
             print(f'{self.__class__.__name__}: Failed to connect to Android Device')
             print(f'{self.__class__.__name__}: {e}')
-            return 
+            return
 
         # run loop for thread
         self._stay_alive.set()
@@ -60,7 +60,7 @@ class Target_Monitor(threading.Thread):
             self.kill()
 
     def kill(self):
-        self._stay_alive.clear()   
+        self._stay_alive.clear()
 
 
 class ADB_Executor():
