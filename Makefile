@@ -1,10 +1,7 @@
 include app/controller/docker/Makefile
+include app/Makefile
 
 .DEFAULT_GOAL := srsran-build
-
-.PHONY: setup
-setup:
-	pip install -r ./app/requirements.txt
 
 .PHONY: test
 test:
