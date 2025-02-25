@@ -146,7 +146,7 @@ class CLI:
             print(f"Error saving container status: {e}")
 
 
-# Simple command-line interface for testing
+# Simple command-line interface for testing and helps know the commands
 if __name__ == "__main__":
     import sys
 
