@@ -8,19 +8,75 @@ with focus on Docker container status monitoring.
 
 import docker
 import json
+import cmd
+import sys
 
 
-class CLI:
+class CLI(cmd.Cmd):
     """Class for CLI operations including Docker container status monitoring."""
+
+    intro = """
+    ================================================================
+    Baseband Fuzzing Platform CLI
+    
+    Type 'help' or '?' to list commands.
+    Type 'quit' or 'exit' to exit the program.
+    ================================================================
+    """
+    prompt = "(fuzzer) > "
 
     def __init__(self):
         """Initialize the CLI with Docker client connection."""
+        super().__init__()
         try:
             self.client = docker.from_env()
             print("Connected to Docker")
         except docker.errors.DockerException as e:
             print(f"Error connecting to Docker: {e}")
             self.client = None
+
+    def do_list(self, arg):
+        """
+        List Docker containers with optional name prefix filter.
+        Usage: list [prefix]
+        Example: list srsran
+        """
+        args = arg.split()
+        filter_prefix = args[0] if args else None
+        self.print_container_list(filter_prefix=filter_prefix)
+
+    def do_inspect(self, arg):
+        """
+        Show detailed information about a specific container.
+        Usage: inspect <container_id>
+        Example: inspect 973b308dd7
+        """
+        if not arg:
+            print("Error: Container ID required")
+            return
+        self.print_container_details(arg)
+
+    def do_srsran(self, arg):
+        """
+        Show only srsRAN containers.
+        Usage: srsran
+        """
+        self.print_container_list(filter_prefix="srsran")
+
+    def do_exit(self, arg):
+        """Exit the CLI."""
+        print("Exiting CLI...")
+        return True
+
+    def do_quit(self, arg):
+        """Exit the CLI."""
+        return self.do_exit(arg)
+
+    # Alias 'ls' to 'list' for convenience
+    do_ls = do_list
+
+    # Make exit work with Ctrl+D (EOF)
+    do_EOF = do_exit
 
     def list_containers(self, all_containers=True, filter_prefix=None):
         """
@@ -146,24 +202,27 @@ class CLI:
             print(f"Error saving container status: {e}")
 
 
-# Simple command-line interface for testing and helps know the commands
+# Command-line interface for testing
 if __name__ == "__main__":
-    import sys
-
-    cli = CLI()
-
-    if len(sys.argv) < 2:
-        cli.print_container_list()
-    elif sys.argv[1] == "list":
-        filter_prefix = sys.argv[2] if len(sys.argv) > 2 else None
-        cli.print_container_list(filter_prefix=filter_prefix)
-    elif sys.argv[1] == "inspect" and len(sys.argv) > 2:
-        cli.print_container_details(sys.argv[2])
-    elif sys.argv[1] == "srsran":
-        cli.print_container_list(filter_prefix="srsran")
+    # Check if running with arguments or in interactive mode
+    if len(sys.argv) > 1:
+        # Run in compatibility mode with original CLI
+        cli = CLI()
+        
+        if sys.argv[1] == "list":
+            filter_prefix = sys.argv[2] if len(sys.argv) > 2 else None
+            cli.print_container_list(filter_prefix=filter_prefix)
+        elif sys.argv[1] == "inspect" and len(sys.argv) > 2:
+            cli.print_container_details(sys.argv[2])
+        elif sys.argv[1] == "srsran":
+            cli.print_container_list(filter_prefix="srsran")
+        else:
+            print("Usage:")
+            print("  python3 cli.py                  - Run interactive CLI")
+            print("  python3 cli.py list [prefix]    - List containers with optional name prefix")
+            print("  python3 cli.py inspect <id>     - Show details for a specific container")
+            print("  python3 cli.py srsran           - List srsRAN containers")
     else:
-        print("Usage:")
-        print("  python3 cli.py                  - List all containers")
-        print("  python3 cli.py list [prefix]    - List containers with optional name prefix")
-        print("  python3 cli.py inspect <id>     - Show details for a specific container")
-        print("  python3 cli.py srsran           - List srsRAN containers")
+        # Run in interactive mode
+        print("Starting interactive CLI mode. Type 'help' for commands.")
+        CLI().cmdloop()
