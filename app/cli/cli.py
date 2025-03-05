@@ -40,12 +40,10 @@ class CLI(cmd.Cmd):
         except docker.errors.DockerException as e:
             print(f"Error connecting to Docker: {e}")
             self.client = None
-            
         # Store reference to Target_Monitor if provided
         self.target_monitor = target_monitor
 
     # ===== Docker Container Commands =====
-    
     def do_list(self, arg):
         """
         List Docker containers with optional name prefix filter.
@@ -75,7 +73,6 @@ class CLI(cmd.Cmd):
         self.print_container_list(filter_prefix="wifi")
     
     # ===== Android Device Commands =====
-    
     def do_adb(self, arg):
         """
         Execute an ADB command on the connected Android device.
@@ -88,7 +85,6 @@ class CLI(cmd.Cmd):
         if not arg:
             print("Error: ADB command required")
             return
-        
         # Check if we can use the Target_Monitor (preferred)
         if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
             try:
@@ -107,10 +103,8 @@ class CLI(cmd.Cmd):
         try:
             cmd = ["adb"] + arg.split()
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            
             # Add timeout of 5 seconds to prevent hanging
             stdout, stderr = process.communicate(timeout=5)
-            
             if stdout:
                 print(stdout.decode())
             if stderr:
@@ -131,7 +125,6 @@ class CLI(cmd.Cmd):
         """
         args = arg.split()
         command = args[0] if args else "show"
-        
         if command == "show" or not command:
             self._show_logs()
         elif command == "clear":
@@ -189,10 +182,8 @@ class CLI(cmd.Cmd):
                 model = self.target_monitor.executor.adb_exec("getprop ro.product.model").strip()
                 version = self.target_monitor.executor.adb_exec("getprop ro.build.version.release").strip()
                 sdk = self.target_monitor.executor.adb_exec("getprop ro.build.version.sdk").strip()
-                
                 # Display battery info
                 battery = self.target_monitor.executor.adb_exec("dumpsys battery")
-                
                 print("\n===== Android Device Information =====")
                 print(f"Manufacturer: {manufacturer}")
                 print(f"Model: {model}")
@@ -208,7 +199,6 @@ class CLI(cmd.Cmd):
             self._execute_adb_subprocess("devices -l")
     
     # ===== Standard CLI Commands =====
-    
     def do_exit(self, arg):
         """Exit the CLI."""
         print("Exiting CLI...")
@@ -225,7 +215,6 @@ class CLI(cmd.Cmd):
     do_EOF = do_exit
 
     # ===== Docker Container Methods =====
-    
     def list_containers(self, all_containers=True, filter_prefix=None):
         """
         List Docker containers with optional filtering.
@@ -239,13 +228,10 @@ class CLI(cmd.Cmd):
         """
         if not self.client:
             return []
-
         try:
             containers = self.client.containers.list(all=all_containers)
-
             if filter_prefix:
                 containers = [c for c in containers if c.name.startswith(filter_prefix)]
-
             return containers
         except Exception as e:
             print(f"Error listing containers: {e}")
@@ -263,7 +249,6 @@ class CLI(cmd.Cmd):
         """
         if not self.client:
             return None
-
         try:
             container = self.client.containers.get(container_id)
             return container.attrs
@@ -283,14 +268,11 @@ class CLI(cmd.Cmd):
             filter_prefix: Filter containers by name prefix (e.g., "wifi")
         """
         containers = self.list_containers(all_containers, filter_prefix)
-
         if not containers:
             print("No containers found")
             return
-
         print(f"\n{'CONTAINER ID':<15}{'NAME':<30}{'STATUS':<15}{'IMAGE':<30}")
         print("-" * 90)
-
         for container in containers:
             print(f"{container.short_id:<15}{container.name:<30}{container.status:<15}{container.image.tags[0] if container.image.tags else 'unknown':<30}")
 
@@ -302,10 +284,8 @@ class CLI(cmd.Cmd):
             container_id: ID or name of the container
         """
         details = self.get_container_details(container_id)
-
         if not details:
             return
-
         print(f"\nContainer Details: {container_id}")
         print("-" * 50)
         print(f"ID: {details.get('Id', 'Unknown')[:12]}")
@@ -313,7 +293,6 @@ class CLI(cmd.Cmd):
         print(f"Image: {details.get('Config', {}).get('Image', 'Unknown')}")
         print(f"Status: {details.get('State', {}).get('Status', 'Unknown')}")
         print(f"Created: {details.get('Created', 'Unknown')}")
-
         # Network info
         networks = details.get('NetworkSettings', {}).get('Networks', {})
         if networks:
@@ -331,7 +310,6 @@ class CLI(cmd.Cmd):
             filter_prefix: Filter containers by name prefix (e.g., "wifi")
         """
         containers = self.list_containers(all_containers, filter_prefix)
-
         container_info = []
         for container in containers:
             info = {
@@ -341,7 +319,6 @@ class CLI(cmd.Cmd):
                 'image': container.image.tags[0] if container.image.tags else 'unknown'
             }
             container_info.append(info)
-
         try:
             with open(filename, 'w') as f:
                 json.dump(container_info, f, indent=2)
@@ -356,7 +333,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         # Run in compatibility mode with original CLI
         cli = CLI()
-        
         if sys.argv[1] == "list":
             filter_prefix = sys.argv[2] if len(sys.argv) > 2 else None
             cli.print_container_list(filter_prefix=filter_prefix)
