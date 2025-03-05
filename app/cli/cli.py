@@ -71,7 +71,7 @@ class CLI(cmd.Cmd):
         Usage: wifi
         """
         self.print_container_list(filter_prefix="wifi")
-    
+
     # ===== Android Device Commands =====
     def do_adb(self, arg):
         """
@@ -97,7 +97,7 @@ class CLI(cmd.Cmd):
         else:
             # Fall back to subprocess if Target_Monitor is not available
             self._execute_adb_subprocess(arg)
-    
+
     def _execute_adb_subprocess(self, arg):
         """Execute ADB command using subprocess with timeout."""
         try:
@@ -114,7 +114,7 @@ class CLI(cmd.Cmd):
             print("Error: Command timed out. No device may be connected.")
         except Exception as e:
             print(f"Error executing ADB command: {e}")
-    
+
     def do_logs(self, arg):
         """
         Display Android device logs.
@@ -133,7 +133,7 @@ class CLI(cmd.Cmd):
             self._filter_logs(args[1])
         else:
             print("Unknown logs command. Try 'help logs' for usage information.")
-    
+
     def _show_logs(self):
         """Show current device logs."""
         if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
@@ -145,7 +145,7 @@ class CLI(cmd.Cmd):
                 self._execute_adb_subprocess("logcat -d")
         else:
             self._execute_adb_subprocess("logcat -d")
-    
+
     def _clear_logs(self):
         """Clear the log buffer."""
         if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
@@ -157,7 +157,7 @@ class CLI(cmd.Cmd):
                 self._execute_adb_subprocess("logcat -c")
         else:
             self._execute_adb_subprocess("logcat -c")
-    
+
     def _filter_logs(self, tag):
         """Filter logs by tag."""
         if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
@@ -169,7 +169,7 @@ class CLI(cmd.Cmd):
                 self._execute_adb_subprocess(f"logcat -d *:{tag}")
         else:
             self._execute_adb_subprocess(f"logcat -d *:{tag}")
-    
+
     def do_device_info(self, arg):
         """
         Display information about the connected Android device.
@@ -197,7 +197,7 @@ class CLI(cmd.Cmd):
                 self._execute_adb_subprocess("devices -l")
         else:
             self._execute_adb_subprocess("devices -l")
-    
+
     # ===== Standard CLI Commands =====
     def do_exit(self, arg):
         """Exit the CLI."""

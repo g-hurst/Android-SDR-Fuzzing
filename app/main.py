@@ -32,6 +32,7 @@ def main():
             return
     # If not in interactive mode, run the original monitoring approach
     # Create a thread for container status monitoring
+
     def show_container_status():
         while True:
             print("\n===== Container Status =====")
