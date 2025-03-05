@@ -2,22 +2,23 @@
 """
 CLI Module
 ---------
-Provides CLI functionality for the baseband fuzzing platform,
-with focus on Docker container status monitoring.
+Provides CLI functionality for the WiFi fuzzing platform,
+with focus on Docker container status monitoring and Android device interaction.
 """
 
 import docker
 import json
 import cmd
 import sys
+import subprocess
 
 
 class CLI(cmd.Cmd):
-    """Class for CLI operations including Docker container status monitoring."""
+    """Class for CLI operations including Docker container status monitoring and Android interaction."""
 
     intro = """
     ================================================================
-    Baseband Fuzzing Platform CLI
+    WiFi Fuzzing Platform CLI
     
     Type 'help' or '?' to list commands.
     Type 'quit' or 'exit' to exit the program.
@@ -25,8 +26,13 @@ class CLI(cmd.Cmd):
     """
     prompt = "(fuzzer) > "
 
-    def __init__(self):
-        """Initialize the CLI with Docker client connection."""
+    def __init__(self, target_monitor=None):
+        """
+        Initialize the CLI with Docker client connection and target monitor.
+        
+        Args:
+            target_monitor: Optional reference to Target_Monitor instance
+        """
         super().__init__()
         try:
             self.client = docker.from_env()
@@ -34,12 +40,17 @@ class CLI(cmd.Cmd):
         except docker.errors.DockerException as e:
             print(f"Error connecting to Docker: {e}")
             self.client = None
+            
+        # Store reference to Target_Monitor if provided
+        self.target_monitor = target_monitor
 
+    # ===== Docker Container Commands =====
+    
     def do_list(self, arg):
         """
         List Docker containers with optional name prefix filter.
         Usage: list [prefix]
-        Example: list srsran
+        Example: list wifi
         """
         args = arg.split()
         filter_prefix = args[0] if args else None
@@ -56,13 +67,148 @@ class CLI(cmd.Cmd):
             return
         self.print_container_details(arg)
 
-    def do_srsran(self, arg):
+    def do_wifi(self, arg):
         """
-        Show only srsRAN containers.
-        Usage: srsran
+        Show only WiFi fuzzing containers.
+        Usage: wifi
         """
-        self.print_container_list(filter_prefix="srsran")
-
+        self.print_container_list(filter_prefix="wifi")
+    
+    # ===== Android Device Commands =====
+    
+    def do_adb(self, arg):
+        """
+        Execute an ADB command on the connected Android device.
+        Usage: adb <command>
+        Examples:
+            adb devices
+            adb shell ls /sdcard
+            adb shell dumpsys battery
+        """
+        if not arg:
+            print("Error: ADB command required")
+            return
+        
+        # Check if we can use the Target_Monitor (preferred)
+        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+            try:
+                # Execute through Target_Monitor's ADB_Executor
+                result = self.target_monitor.executor.adb_exec(arg)
+                print(result)
+            except Exception as e:
+                print(f"Error executing ADB command through Target_Monitor: {e}")
+                self._execute_adb_subprocess(arg)
+        else:
+            # Fall back to subprocess if Target_Monitor is not available
+            self._execute_adb_subprocess(arg)
+    
+    def _execute_adb_subprocess(self, arg):
+        """Execute ADB command using subprocess with timeout."""
+        try:
+            cmd = ["adb"] + arg.split()
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+            # Add timeout of 5 seconds to prevent hanging
+            stdout, stderr = process.communicate(timeout=5)
+            
+            if stdout:
+                print(stdout.decode())
+            if stderr:
+                print(f"Error: {stderr.decode()}")
+        except subprocess.TimeoutExpired:
+            process.kill()
+            print("Error: Command timed out. No device may be connected.")
+        except Exception as e:
+            print(f"Error executing ADB command: {e}")
+    
+    def do_logs(self, arg):
+        """
+        Display Android device logs.
+        Usage:
+            logs               - Show current logs
+            logs clear         - Clear log buffer
+            logs filter <tag>  - Filter logs by tag
+        """
+        args = arg.split()
+        command = args[0] if args else "show"
+        
+        if command == "show" or not command:
+            self._show_logs()
+        elif command == "clear":
+            self._clear_logs()
+        elif command == "filter" and len(args) > 1:
+            self._filter_logs(args[1])
+        else:
+            print("Unknown logs command. Try 'help logs' for usage information.")
+    
+    def _show_logs(self):
+        """Show current device logs."""
+        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+            try:
+                logs = self.target_monitor.executor.adb_exec("logcat -d")
+                print(logs)
+            except Exception as e:
+                print(f"Error getting logs through Target_Monitor: {e}")
+                self._execute_adb_subprocess("logcat -d")
+        else:
+            self._execute_adb_subprocess("logcat -d")
+    
+    def _clear_logs(self):
+        """Clear the log buffer."""
+        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+            try:
+                self.target_monitor.executor.adb_exec("logcat -c")
+                print("Log buffer cleared")
+            except Exception as e:
+                print(f"Error clearing logs through Target_Monitor: {e}")
+                self._execute_adb_subprocess("logcat -c")
+        else:
+            self._execute_adb_subprocess("logcat -c")
+    
+    def _filter_logs(self, tag):
+        """Filter logs by tag."""
+        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+            try:
+                logs = self.target_monitor.executor.adb_exec(f"logcat -d *:{tag}")
+                print(logs)
+            except Exception as e:
+                print(f"Error filtering logs through Target_Monitor: {e}")
+                self._execute_adb_subprocess(f"logcat -d *:{tag}")
+        else:
+            self._execute_adb_subprocess(f"logcat -d *:{tag}")
+    
+    def do_device_info(self, arg):
+        """
+        Display information about the connected Android device.
+        Usage: device_info
+        """
+        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+            try:
+                # Get basic device information
+                manufacturer = self.target_monitor.executor.adb_exec("getprop ro.product.manufacturer").strip()
+                model = self.target_monitor.executor.adb_exec("getprop ro.product.model").strip()
+                version = self.target_monitor.executor.adb_exec("getprop ro.build.version.release").strip()
+                sdk = self.target_monitor.executor.adb_exec("getprop ro.build.version.sdk").strip()
+                
+                # Display battery info
+                battery = self.target_monitor.executor.adb_exec("dumpsys battery")
+                
+                print("\n===== Android Device Information =====")
+                print(f"Manufacturer: {manufacturer}")
+                print(f"Model: {model}")
+                print(f"Android Version: {version} (SDK {sdk})")
+                print("\n----- Battery Information -----")
+                for line in battery.splitlines():
+                    if any(x in line for x in ["level", "scale", "status", "health", "present", "powered"]):
+                        print(line.strip())
+            except Exception as e:
+                print(f"Error getting device info through Target_Monitor: {e}")
+                self._execute_adb_subprocess("devices -l")
+        else:
+            self._execute_adb_subprocess("devices -l")
+    
+    # ===== Standard CLI Commands =====
+    
     def do_exit(self, arg):
         """Exit the CLI."""
         print("Exiting CLI...")
@@ -78,13 +224,15 @@ class CLI(cmd.Cmd):
     # Make exit work with Ctrl+D (EOF)
     do_EOF = do_exit
 
+    # ===== Docker Container Methods =====
+    
     def list_containers(self, all_containers=True, filter_prefix=None):
         """
         List Docker containers with optional filtering.
 
         Args:
             all_containers: Include stopped containers (default: True)
-            filter_prefix: Filter containers by name prefix (e.g., "srsran")
+            filter_prefix: Filter containers by name prefix (e.g., "wifi")
 
         Returns:
             List of container objects
@@ -132,7 +280,7 @@ class CLI(cmd.Cmd):
 
         Args:
             all_containers: Include stopped containers (default: True)
-            filter_prefix: Filter containers by name prefix (e.g., "srsran")
+            filter_prefix: Filter containers by name prefix (e.g., "wifi")
         """
         containers = self.list_containers(all_containers, filter_prefix)
 
@@ -180,7 +328,7 @@ class CLI(cmd.Cmd):
         Args:
             filename: Path to save the JSON file
             all_containers: Include stopped containers (default: True)
-            filter_prefix: Filter containers by name prefix (e.g., "srsran")
+            filter_prefix: Filter containers by name prefix (e.g., "wifi")
         """
         containers = self.list_containers(all_containers, filter_prefix)
 
@@ -214,14 +362,14 @@ if __name__ == "__main__":
             cli.print_container_list(filter_prefix=filter_prefix)
         elif sys.argv[1] == "inspect" and len(sys.argv) > 2:
             cli.print_container_details(sys.argv[2])
-        elif sys.argv[1] == "srsran":
-            cli.print_container_list(filter_prefix="srsran")
+        elif sys.argv[1] == "wifi":
+            cli.print_container_list(filter_prefix="wifi")
         else:
             print("Usage:")
             print("  python3 cli.py                  - Run interactive CLI")
             print("  python3 cli.py list [prefix]    - List containers with optional name prefix")
             print("  python3 cli.py inspect <id>     - Show details for a specific container")
-            print("  python3 cli.py srsran           - List srsRAN containers")
+            print("  python3 cli.py wifi             - List WiFi fuzzing containers")
     else:
         # Run in interactive mode
         print("Starting interactive CLI mode. Type 'help' for commands.")

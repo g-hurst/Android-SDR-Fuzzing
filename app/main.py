@@ -18,8 +18,8 @@ def main():
     transmitter = Transmitter()
     transmitter.start()
 
-    # Create CLI instance
-    cli = CLI()
+    # Create CLI instance with reference to the target monitor
+    cli = CLI(target_monitor=monitor)
 
     if interactive_mode:
         # Run the interactive CLI
