@@ -1,3 +1,4 @@
 [flake8]
 exclude         = app/controller/srsRAN_Project
 max-line-length = 250
+ignore          = W391,W292
