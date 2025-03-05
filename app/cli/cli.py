@@ -19,7 +19,7 @@ class CLI(cmd.Cmd):
     intro = """
     ================================================================
     WiFi Fuzzing Platform CLI
-    
+
     Type 'help' or '?' to list commands.
     Type 'quit' or 'exit' to exit the program.
     ================================================================
@@ -29,7 +29,7 @@ class CLI(cmd.Cmd):
     def __init__(self, target_monitor=None):
         """
         Initialize the CLI with Docker client connection and target monitor.
-        
+
         Args:
             target_monitor: Optional reference to Target_Monitor instance
         """
