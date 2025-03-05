@@ -2,7 +2,7 @@
 import time
 import threading
 import sys
-from controller.target_monitor import Target_Monitor
+from target.target_monitor import Target_Monitor
 from transmitter.transmitter import Transmitter
 from cli.cli import CLI  # Import your CLI class from the cli directory
 
