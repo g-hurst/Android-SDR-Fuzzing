@@ -1,6 +1,12 @@
+#!/usr/bin/env python3
+"""
+Target Monitor Module
+-------------------
+Provides monitoring capabilities for the Android target device.
+"""
+
 import threading
 import os
-
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from adb_shell.adb_device import AdbDeviceUsb
@@ -54,7 +60,8 @@ class Target_Monitor(threading.Thread):
         self._stay_alive.set()
         try:
             while self._stay_alive.is_set():
-                pass
+                # Just sleep a short time to prevent CPU spinning
+                self._stay_alive.wait(0.1)
         except KeyboardInterrupt:
             print(f'Keyboard interrupt in {self.__class__.__name__}'.upper())
             self.kill()
@@ -66,21 +73,33 @@ class Target_Monitor(threading.Thread):
 class ADB_Executor():
     def __init__(self, device):
         self.device = device
-        self.command_stream()
+        # Removed the call to command_stream() that was blocking execution
 
     def adb_exec(self, cmd: str) -> str:
+        """Execute an ADB command and return the result as a string."""
         return self.device.shell(cmd)
 
     def command_stream(self):
+        """
+        Interactive command stream for manual ADB command execution.
+        This method should be called explicitly when needed, not automatically.
+        """
+        print("Starting ADB command stream. Type 'exit' to quit.")
         while True:
             cmd = input("Enter command: ")
             if cmd == 'exit':
                 break
             if cmd == 'get status':
                 self.get_phone_stats()
-            print(self.adb_exec(cmd))
+            else:
+                print(self.adb_exec(cmd))
         print("Exiting stream...")
 
     def get_phone_stats(self):
-        print("Battery: ", self.adb_exec('dumpsys battery | grep "scale"'))
+        """Get basic phone stats like battery information."""
+        battery_info = self.adb_exec('dumpsys battery')
+        print("Battery info:")
+        for line in battery_info.splitlines():
+            if any(x in line for x in ["level", "scale", "status", "health", "present", "powered"]):
+                print(f"  {line.strip()}")
         return
