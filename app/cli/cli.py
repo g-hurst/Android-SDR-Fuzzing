@@ -101,14 +101,16 @@ class CLI(cmd.Cmd):
     def _execute_adb_subprocess(self, arg):
         """Execute ADB command using subprocess with timeout."""
         try:
-            cmd = ["adb"] + arg.split()
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            # Add timeout of 5 seconds to prevent hanging
-            stdout, stderr = process.communicate(timeout=5)
-            if stdout:
-                print(stdout.decode())
-            if stderr:
-                print(f"Error: {stderr.decode()}")
+            stdout = self.target_monitor.executor.abd_exec(arg)
+            print(stdout)
+            # cmd = ["adb"] + arg.split()
+            # process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # # Add timeout of 5 seconds to prevent hanging
+            # stdout, stderr = process.communicate(timeout=5)
+            # if stdout:
+            #     print(stdout.decode())
+            # if stderr:
+            #     print(f"Error: {stderr.decode()}")
         except subprocess.TimeoutExpired:
             process.kill()
             print("Error: Command timed out. No device may be connected.")
