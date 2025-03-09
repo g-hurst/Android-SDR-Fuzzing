@@ -11,9 +11,9 @@ class Target_Monitor(threading.Thread):
         super().__init__()
         self._stay_alive = threading.Event()
         self.adb_key_path = os.path.join(
-                                os.path.dirname(os.path.abspath(__file__)),
-                                '.android/adbkey'
-                                )  # TODO: this should probably be configurable
+            os.path.dirname(os.path.abspath(__file__)),
+            '.android/adbkey'
+        )  # TODO: this should probably be configurable
         self.device = None
         self.executor = None
 
