@@ -1,17 +1,18 @@
-include app/controller/docker/Makefile
-
-.DEFAULT_GOAL := srsran-build
+.DEFAULT_GOAL := setup
 
 .PHONY: setup
 setup:
 	pip install -r ./app/requirements.txt
 
+.PHONY: run
+run:
+	cd ./app && /main.py -i
+
 .PHONY: test
 test:
-	pytest --ignore=$(SRSRAN_REPO_DIR)
+	pytest
 
 .PHONY: clean
 clean:
-	$(MAKE) docker-clean-images
 	rm -rf ./app/controller/.android/
 	rm -rf ./.pytest_cache/

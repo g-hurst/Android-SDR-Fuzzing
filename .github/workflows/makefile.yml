@@ -17,14 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build (and run) project
-        run: make -j$(nproc)
-      - name: run make
-        run: |
-          docker save $(docker images -q) > docker-images.tar
-      - uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ github.run_id }}
-          path: docker-images.tar
+        run: make
 
   test:
     needs: build
