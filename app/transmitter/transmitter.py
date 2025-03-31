@@ -1,8 +1,8 @@
 import threading
 import random
 import string
-from scapy.layers.dot11 import RadioTap, Dot11, LLC, SNAP
-from scapy.all import sendp, RandMAC, Raw
+from scapy.layers.dot11 import RadioTap, Dot11, LLC
+from scapy.all import sendp, RandMAC, Raw, SNAP
 
 
 class Transmitter(threading.Thread):
