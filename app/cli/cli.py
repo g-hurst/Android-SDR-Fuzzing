@@ -7,7 +7,6 @@ with focus on Android device interaction for WiFi testing.
 """
 
 import cmd
-import sys
 
 
 class CLI(cmd.Cmd):
@@ -191,7 +190,6 @@ class CLI(cmd.Cmd):
                 print("\n===== Network Status =====")
                 netstats = self.target_monitor.executor.adb_exec("dumpsys netstats | grep -A 5 wifi").strip()
                 print(netstats)
-                
                 # Get current connectivity
                 connectivity = self.target_monitor.executor.adb_exec("dumpsys connectivity | grep -A 5 'NetworkAgentInfo'").strip()
                 print("\n----- Current Connectivity -----")
