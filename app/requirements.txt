@@ -1,6 +1,7 @@
 adb-shell
 adb-shell[usb]
 docker
+scapy
 
 pytest
 
