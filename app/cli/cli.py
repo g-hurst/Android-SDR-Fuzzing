@@ -3,17 +3,14 @@
 CLI Module
 ---------
 Provides CLI functionality for the WiFi fuzzing platform,
-with focus on Docker container status monitoring and Android device interaction.
+with focus on Android device interaction for WiFi testing.
 """
 
-import docker
-import json
 import cmd
-import sys
 
 
 class CLI(cmd.Cmd):
-    """Class for CLI operations including Docker container status monitoring and Android interaction."""
+    """Class for CLI operations for WiFi fuzzing and Android interaction."""
 
     intro = """
     ================================================================
@@ -27,49 +24,14 @@ class CLI(cmd.Cmd):
 
     def __init__(self, target_monitor=None):
         """
-        Initialize the CLI with Docker client connection and target monitor.
+        Initialize the CLI with target monitor.
 
         Args:
             target_monitor: Optional reference to Target_Monitor instance
         """
         super().__init__()
-        try:
-            self.client = docker.from_env()
-            print("Connected to Docker")
-        except docker.errors.DockerException as e:
-            print(f"Error connecting to Docker: {e}")
-            self.client = None
         # Store reference to Target_Monitor if provided
         self.target_monitor = target_monitor
-
-    # ===== Docker Container Commands =====
-    def do_list(self, arg):
-        """
-        List Docker containers with optional name prefix filter.
-        Usage: list [prefix]
-        Example: list wifi
-        """
-        args = arg.split()
-        filter_prefix = args[0] if args else None
-        self.print_container_list(filter_prefix=filter_prefix)
-
-    def do_inspect(self, arg):
-        """
-        Show detailed information about a specific container.
-        Usage: inspect <container_id>
-        Example: inspect 973b308dd7
-        """
-        if not arg:
-            print("Error: Container ID required")
-            return
-        self.print_container_details(arg)
-
-    def do_wifi(self, arg):
-        """
-        Show only WiFi fuzzing containers.
-        Usage: wifi
-        """
-        self.print_container_list(filter_prefix="wifi")
 
     # ===== Android Device Commands =====
     def do_adb(self, arg):
@@ -87,9 +49,16 @@ class CLI(cmd.Cmd):
         # Check if we can use the Target_Monitor (preferred)
         if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
             try:
-                # Execute through Target_Monitor's ADB_Executor
-                result = self.target_monitor.executor.adb_exec(arg)
-                print(result)
+                # Split the command to handle "adb shell" vs other commands
+                args = arg.split()
+                # If it's an adb shell command, pass everything after "shell" to executor
+                if args[0] == "shell" and len(args) > 1:
+                    result = self.target_monitor.executor.adb_exec(" ".join(args[1:]))
+                    print(result)
+                else:
+                    # For non-shell commands, try to execute but might not be supported
+                    print("Note: Only 'adb shell' commands are fully supported with the Target Monitor")
+                    self._execute_adb_subprocess(arg)
             except Exception as e:
                 print(f"Error executing ADB command through Target_Monitor: {e}")
                 self._execute_adb_subprocess(arg)
@@ -98,10 +67,13 @@ class CLI(cmd.Cmd):
             self._execute_adb_subprocess(arg)
 
     def _execute_adb_subprocess(self, arg):
-        """Execute ADB command using subprocess with timeout."""
+        """Execute ADB command using Target Monitor."""
         try:
-            stdout = self.target_monitor.executor.abd_exec(arg)
-            print(stdout)
+            if self.target_monitor and hasattr(self.target_monitor, 'executor'):
+                stdout = self.target_monitor.executor.adb_exec(arg)
+                print(stdout)
+            else:
+                print("Error: Target Monitor not available")
         except Exception as e:
             print(f"Error executing ADB command: {e}")
 
@@ -188,6 +160,45 @@ class CLI(cmd.Cmd):
         else:
             self._execute_adb_subprocess("devices -l")
 
+    def do_wifi_info(self, arg):
+        """
+        Display WiFi information from the connected Android device.
+        Usage: wifi_info
+        """
+        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+            try:
+                # Get WiFi information
+                wifi_info = self.target_monitor.executor.adb_exec("dumpsys wifi")
+                # Extract and display key WiFi information
+                print("\n===== WiFi Information =====")
+                for line in wifi_info.splitlines():
+                    if any(x in line for x in ["SSID", "BSSID", "RSSI", "state=", "IP", "Supplicant", "freq", "scan"]):
+                        print(line.strip())
+            except Exception as e:
+                print(f"Error getting WiFi info: {e}")
+        else:
+            print("Error: Target Monitor not available")
+
+    def do_network_status(self, arg):
+        """
+        Display network status information from the connected Android device.
+        Usage: network_status
+        """
+        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+            try:
+                # Get network statistics
+                print("\n===== Network Status =====")
+                netstats = self.target_monitor.executor.adb_exec("dumpsys netstats | grep -A 5 wifi").strip()
+                print(netstats)
+                # Get current connectivity
+                connectivity = self.target_monitor.executor.adb_exec("dumpsys connectivity | grep -A 5 'NetworkAgentInfo'").strip()
+                print("\n----- Current Connectivity -----")
+                print(connectivity)
+            except Exception as e:
+                print(f"Error getting network status: {e}")
+        else:
+            print("Error: Target Monitor not available")
+
     # ===== Standard CLI Commands =====
     def do_exit(self, arg):
         """Exit the CLI."""
@@ -198,145 +209,12 @@ class CLI(cmd.Cmd):
         """Exit the CLI."""
         return self.do_exit(arg)
 
-    # Alias 'ls' to 'list' for convenience
-    do_ls = do_list
-
     # Make exit work with Ctrl+D (EOF)
     do_EOF = do_exit
-
-    # ===== Docker Container Methods =====
-    def list_containers(self, all_containers=True, filter_prefix=None):
-        """
-        List Docker containers with optional filtering.
-
-        Args:
-            all_containers: Include stopped containers (default: True)
-            filter_prefix: Filter containers by name prefix (e.g., "wifi")
-
-        Returns:
-            List of container objects
-        """
-        if not self.client:
-            return []
-        try:
-            containers = self.client.containers.list(all=all_containers)
-            if filter_prefix:
-                containers = [c for c in containers if c.name.startswith(filter_prefix)]
-            return containers
-        except Exception as e:
-            print(f"Error listing containers: {e}")
-            return []
-
-    def get_container_details(self, container_id):
-        """
-        Get detailed information about a specific container.
-
-        Args:
-            container_id: ID or name of the container
-
-        Returns:
-            Container attributes dictionary or None if not found
-        """
-        if not self.client:
-            return None
-        try:
-            container = self.client.containers.get(container_id)
-            return container.attrs
-        except docker.errors.NotFound:
-            print(f"Container '{container_id}' not found")
-            return None
-        except Exception as e:
-            print(f"Error getting container details: {e}")
-            return None
-
-    def print_container_list(self, all_containers=True, filter_prefix=None):
-        """
-        Print a formatted list of Docker containers.
-
-        Args:
-            all_containers: Include stopped containers (default: True)
-            filter_prefix: Filter containers by name prefix (e.g., "wifi")
-        """
-        containers = self.list_containers(all_containers, filter_prefix)
-        if not containers:
-            print("No containers found")
-            return
-        print(f"\n{'CONTAINER ID':<15}{'NAME':<30}{'STATUS':<15}{'IMAGE':<30}")
-        print("-" * 90)
-        for container in containers:
-            print(f"{container.short_id:<15}{container.name:<30}{container.status:<15}{container.image.tags[0] if container.image.tags else 'unknown':<30}")
-
-    def print_container_details(self, container_id):
-        """
-        Print detailed information about a specific container.
-
-        Args:
-            container_id: ID or name of the container
-        """
-        details = self.get_container_details(container_id)
-        if not details:
-            return
-        print(f"\nContainer Details: {container_id}")
-        print("-" * 50)
-        print(f"ID: {details.get('Id', 'Unknown')[:12]}")
-        print(f"Name: {details.get('Name', 'Unknown').lstrip('/')}")
-        print(f"Image: {details.get('Config', {}).get('Image', 'Unknown')}")
-        print(f"Status: {details.get('State', {}).get('Status', 'Unknown')}")
-        print(f"Created: {details.get('Created', 'Unknown')}")
-        # Network info
-        networks = details.get('NetworkSettings', {}).get('Networks', {})
-        if networks:
-            print("\nNetworks:")
-            for net_name, net_info in networks.items():
-                print(f"  {net_name}: {net_info.get('IPAddress', 'No IP')}")
-
-    def save_container_status_to_json(self, filename, all_containers=True, filter_prefix=None):
-        """
-        Save container status information to a JSON file.
-
-        Args:
-            filename: Path to save the JSON file
-            all_containers: Include stopped containers (default: True)
-            filter_prefix: Filter containers by name prefix (e.g., "wifi")
-        """
-        containers = self.list_containers(all_containers, filter_prefix)
-        container_info = []
-        for container in containers:
-            info = {
-                'id': container.short_id,
-                'name': container.name,
-                'status': container.status,
-                'image': container.image.tags[0] if container.image.tags else 'unknown'
-            }
-            container_info.append(info)
-        try:
-            with open(filename, 'w') as f:
-                json.dump(container_info, f, indent=2)
-            print(f"Container status saved to {filename}")
-        except Exception as e:
-            print(f"Error saving container status: {e}")
 
 
 # Command-line interface for testing
 if __name__ == "__main__":
-    # Check if running with arguments or in interactive mode
-    if len(sys.argv) > 1:
-        # Run in compatibility mode with original CLI
-        cli = CLI()
-        if sys.argv[1] == "list":
-            filter_prefix = sys.argv[2] if len(sys.argv) > 2 else None
-            cli.print_container_list(filter_prefix=filter_prefix)
-        elif sys.argv[1] == "inspect" and len(sys.argv) > 2:
-            cli.print_container_details(sys.argv[2])
-        elif sys.argv[1] == "wifi":
-            cli.print_container_list(filter_prefix="wifi")
-        else:
-            print("Usage:")
-            print("  python3 cli.py                  - Run interactive CLI")
-            print("  python3 cli.py list [prefix]    - List containers with optional name prefix")
-            print("  python3 cli.py inspect <id>     - Show details for a specific container")
-            print("  python3 cli.py wifi             - List WiFi fuzzing containers")
-    else:
-        # Run in interactive mode
-        print("Starting interactive CLI mode. Type 'help' for commands.")
-        CLI().cmdloop()
+    # Run in interactive mode
+    print("Starting interactive CLI mode. Type 'help' for commands.")
+    CLI().cmdloop()
