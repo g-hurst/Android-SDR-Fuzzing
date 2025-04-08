@@ -44,8 +44,8 @@ class Target_Monitor(threading.Thread):
         print(f'{self.__class__.__name__}: Requesting connection to device')
         # Ensure device is initialized before connecting
         if not self.device:
-             # Assuming AdbDeviceUsb() should be initialized if None
-             self.device = AdbDeviceUsb()
+            # Assuming AdbDeviceUsb() should be initialized if None
+            self.device = AdbDeviceUsb()
         self.device.connect(rsa_keys=[adb_signer], auth_timeout_s=15.0)
         print(f'{self.__class__.__name__}: Connected')
 
@@ -91,6 +91,7 @@ class Target_Monitor(threading.Thread):
         try:
             self.device = AdbDeviceUsb()
             self.adb_connect()
+            # Correctly initialize ADB_Executor after successful connection
             self.executor = ADB_Executor(self.device)
         except Exception as e:
             print(f'{self.__class__.__name__}: Failed to connect to Android Device')
@@ -116,7 +117,7 @@ class Target_Monitor(threading.Thread):
             # self.kill() is called in finally block
         finally:
             # Ensure resources are cleaned up
-            self.kill() # Set flag to stop
+            self.kill()  # Set flag to stop
             if self.device:
                 try:
                     print(f'{self.__class__.__name__}: Closing ADB connection.')
@@ -124,9 +125,8 @@ class Target_Monitor(threading.Thread):
                 except Exception as e:
                     print(f"Error closing device on exit: {e}")
 
-
     def kill(self):
-        print(f'{self.__class__.__name__}: Stopping thread.') # Added for clarity
+        print(f'{self.__class__.__name__}: Stopping thread.')  # Added for clarity
         self._stay_alive.clear()
 
 
@@ -139,10 +139,10 @@ class ADB_Executor():
         """Execute an ADB command and return the result as a string."""
         # Add basic error handling and timeout
         try:
-             return self.device.shell(cmd, timeout_s=10.0) # Added timeout
+            return self.device.shell(cmd, timeout_s=10.0)  # Added timeout
         except Exception as e:
-             print(f"Error executing ADB command '{cmd}': {e}")
-             return "" # Return empty string on error
+            print(f"Error executing ADB command '{cmd}': {e}")
+            return ""  # Return empty string on error
 
     def command_stream(self):
         """
@@ -150,64 +150,64 @@ class ADB_Executor():
         This method should be called explicitly when needed, not automatically.
         """
         if not self.device:
-             print("Device not available for command stream.")
-             return
+            print("Device not available for command stream.")
+            return
 
         print("Starting ADB command stream. Type 'exit' to quit.")
         while True:
             try:
                 cmd = input("Enter command: ")
-                if cmd.lower() == 'exit': # Case-insensitive exit
+                if cmd.lower() == 'exit':  # Case-insensitive exit
                     break
-                if cmd.lower() == 'get status': # Case-insensitive status
+                if cmd.lower() == 'get status':  # Case-insensitive status
                     self.get_phone_stats()
-                elif cmd.strip(): # Only execute if command is not empty
+                elif cmd.strip():  # Only execute if command is not empty
                     print(self.adb_exec(cmd))
                 # else: ignore empty input
-            except (EOFError, KeyboardInterrupt): # Handle Ctrl+D and Ctrl+C
-                 print("\nExiting command stream.")
-                 break
+            except (EOFError, KeyboardInterrupt):  # Handle Ctrl+D and Ctrl+C
+                print("\nExiting command stream.")
+                break
             except Exception as e:
-                 print(f"An error occurred in command stream: {e}")
-                 # Decide if you want to break or continue on other errors
-                 # break # Uncomment to exit loop on any error
+                print(f"An error occurred in command stream: {e}")
+                # Decide if you want to break or continue on other errors
+                # break # Uncomment to exit loop on any error
 
         print("Exiting stream...")
 
     def get_phone_stats(self):
         """Get basic phone stats like battery information."""
         if not self.device:
-             print("Device not available for get_phone_stats.")
-             return
+            print("Device not available for get_phone_stats.")
+            return
 
         battery_info = self.adb_exec('dumpsys battery')
         print("Battery info:")
         keywords = ["level", "scale", "status", "health", "present", "powered"]
         found_info = False
-        if battery_info: # Check if command returned anything
-             for line in battery_info.splitlines():
-                 stripped_line = line.strip()
-                 # Check if line starts with any keyword
-                 if any(stripped_line.startswith(x) for x in keywords):
-                     print(f"  {stripped_line}")
-                     found_info = True
+        if battery_info:  # Check if command returned anything
+            for line in battery_info.splitlines():
+                stripped_line = line.strip()
+                # Check if line starts with any keyword
+                if any(stripped_line.startswith(x) for x in keywords):
+                    print(f"  {stripped_line}")
+                    found_info = True
         if not found_info:
-             print("  Relevant battery info not found or command failed.")
-        # return # Implicit None return is fine
+            print("  Relevant battery info not found or command failed.")
+        # return  # Implicit None return is fine
 
 
 # Optional: Add main execution block for testing
 if __name__ == "__main__":
-     print("Starting Target Monitor...")
-     monitor = Target_Monitor()
-     monitor.start()
-     try:
-         # Keep the main thread alive so the monitor can run
-         # Use join to wait for the monitor thread to complete
-         monitor.join()
-     except KeyboardInterrupt:
-         print("\nShutdown requested. Stopping monitor thread...")
-         monitor.kill()
-         # Wait for the thread to fully stop and clean up
-         monitor.join()
-     print("Target Monitor stopped.")
+    print("Starting Target Monitor...")
+    monitor = Target_Monitor()
+    monitor.start()
+    try:
+        # Keep the main thread alive so the monitor can run
+        # Use join to wait for the monitor thread to complete
+        monitor.join()
+    except KeyboardInterrupt:
+        print("\nShutdown requested. Stopping monitor thread...")
+        monitor.kill()
+        # Wait for the thread to fully stop and clean up
+        monitor.join()
+    print("Target Monitor stopped.")
