@@ -16,3 +16,12 @@ test:
 clean:
 	rm -rf ./app/controller/.android/
 	rm -rf ./.pytest_cache/
+
+.PHONY: build-docs
+build-docs:
+	sphinx-apidoc -o ./docs ./app
+	cd ./docs && make html
+
+.PHONY: run-docs
+run-docs:
+	cd ./docs/_build/html/ && python3 -m http.server 8088
