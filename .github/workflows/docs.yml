@@ -3,7 +3,7 @@ name: Publish Sphinx Documentation
 on:
   push:
     branches:
-      - master
+      - user_manual
 
 jobs:
   publish_sphinx_docs:
