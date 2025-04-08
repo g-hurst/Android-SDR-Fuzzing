@@ -77,6 +77,20 @@ class CLI(cmd.Cmd):
         except Exception as e:
             print(f"Error executing ADB command: {e}")
 
+    def do_get_ip(self, arg):
+        """
+        Display the IP address of the connected Android device.
+        Usage: get_ip
+        """
+        if self.target_monitor:
+            ip_address = self.target_monitor.get_device_ip()
+            if ip_address:
+                print(f"Device IP address: {ip_address}")
+            else:
+                print("Could not retrieve device IP address")
+        else:
+            print("Error: Target Monitor not available")
+
     def do_logs(self, arg):
         """
         Display Android device logs.

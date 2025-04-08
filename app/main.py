@@ -2,20 +2,33 @@
 import time
 import sys
 from target.target_monitor import Target_Monitor
-from transmitter.transmitter import Transmitter
 from cli.cli import CLI  # Import your CLI class from the cli directory
 
 
 def main():
     # Check if we should run in interactive mode
     interactive_mode = "--interactive" in sys.argv or "-i" in sys.argv
+    skip_transmitter = "--skip-transmitter" in sys.argv
 
-    # create monitor thread and start it
-    monitor = Target_Monitor()
-    monitor.start()
+    # Create monitor thread and start it
+    try:
+        monitor = Target_Monitor()
+        monitor.start()
+        print("Target monitor started")
+    except Exception as e:
+        print(f"Warning: Could not start monitor: {e}")
+        monitor = None
 
-    transmitter = Transmitter()
-    transmitter.start()
+    # Initialize transmitter if not skipped
+    transmitter = None
+    if not skip_transmitter:
+        try:
+            from transmitter.transmitter import Transmitter
+            transmitter = Transmitter()
+            transmitter.start()
+            print("Transmitter started")
+        except Exception as e:
+            print(f"Warning: Could not start transmitter: {e}")
 
     # Create CLI instance with reference to the target monitor
     cli = CLI(target_monitor=monitor)
@@ -28,9 +41,11 @@ def main():
         except KeyboardInterrupt:
             print("\nReceived keyboard interrupt. Shutting down...")
         finally:
-            # cleanup threads
-            monitor.kill()
-            transmitter.kill()
+            # Cleanup threads
+            if monitor:
+                monitor.kill()
+            if transmitter:
+                transmitter.kill()
             print('App complete')
             return
 
@@ -48,9 +63,11 @@ def main():
             print(f'Error in main loop: {e}')
             break
 
-    # cleanup threads
-    monitor.kill()
-    transmitter.kill()
+    # Cleanup threads
+    if monitor:
+        monitor.kill()
+    if transmitter:
+        transmitter.kill()
     print('App complete')
 
 
