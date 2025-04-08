@@ -1,5 +1,4 @@
 .vscode
-app/controller/srsRAN_Project
 __pycache__
 .android
 docs/_build/
