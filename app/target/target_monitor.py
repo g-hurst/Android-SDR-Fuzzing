@@ -45,6 +45,38 @@ class Target_Monitor(threading.Thread):
         self.device.connect(rsa_keys=[adb_signer], auth_timeout_s=15.0)
         print(f'{self.__class__.__name__}: Connected')
 
+    def get_device_ip(self):
+        """
+        Get the IP address of the connected Android device.
+        
+        Returns:
+            str: The IP address of the device, or None if not available
+        """
+        if not self.device or not self.executor:
+            return None
+        
+        try:
+            # Try to get WiFi IP address using ip command
+            wifi_ip = self.executor.adb_exec("ip addr show wlan0 | grep 'inet ' | cut -d' ' -f6 | cut -d/ -f1").strip()
+            if wifi_ip:
+                return wifi_ip
+                
+            # If that fails, try using ifconfig command
+            ip_info = self.executor.adb_exec("ifconfig wlan0 | grep 'inet addr'").strip()
+            if ip_info and "inet addr:" in ip_info:
+                # Extract IP from output like "inet addr:192.168.1.100  Bcast:192.168.1.255  Mask:255.255.255.0"
+                return ip_info.split(':')[1].split()[0]
+                
+            # Try using the dumpsys command
+            dumpsys_ip = self.executor.adb_exec("dumpsys connectivity | grep 'IPv4 address' | cut -d' ' -f3").strip()
+            if dumpsys_ip:
+                return dumpsys_ip
+                
+            return None  # If no IP found
+        except Exception as e:
+            print(f"Error getting device IP: {e}")
+            return None
+
     def run(self):
         # connect to the phone
         try:
