@@ -24,9 +24,7 @@ Install the following packages:
 
 .. code-block:: bash
 
-    apt install python3-pip
-    pip install adb-shell[usb]
-    pip install scapy
+    make setup
 
 Setup
 ~~~~~
@@ -46,6 +44,8 @@ Enable USB debugging on your Android device:
 
 Running the Application
 -----------------------
+This application uses the scapy package and requires sudo Privileges
+the -E flag runs with your current user environment
 
 Interactive Mode
 ~~~~~~~~~~~~~~~~
@@ -53,13 +53,13 @@ Interactive Mode
 .. code-block:: bash
 
     cd app
-    python3 main.py --interactive
+    sudo -E ./main.py --interactive
 
 Without transmitter (for testing):
 
 .. code-block:: bash
-
-    python3 main.py --interactive --skip-transmitter
+    cd app
+    sudo -E ./main.py --interactive --skip-transmitter
 
 Background Mode
 ~~~~~~~~~~~~~~~
@@ -67,7 +67,7 @@ Background Mode
 .. code-block:: bash
 
     cd app
-    python3 main.py
+    sudo -E ./main.py
 
 CLI Commands
 ------------
@@ -144,4 +144,4 @@ Support
 
 For issues or questions, visit:
 
-`https://github.com/g-hurst/Android-SDR-Fuzzing <https://github.com/g-hurst/Android-SDR-Fuzzing
+`https://github.com/g-hurst/Android-SDR-Fuzzing <https://github.com/g-hurst/Android-SDR-Fuzzing>
