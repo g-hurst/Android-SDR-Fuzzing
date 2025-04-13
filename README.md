@@ -21,7 +21,7 @@ For more information on installation, running of the application, or troublehoot
 
 [https://g-hurst.github.io/Android-SDR-Fuzzing/](https://g-hurst.github.io/Android-SDR-Fuzzing/)
 
-## Contributionors
+## Contributors
 
 This project is the resulting effort of three Purdue University Computer Engineering seniors as part of their senior capstone and is maintained by the same three:
 - @g-hurst
