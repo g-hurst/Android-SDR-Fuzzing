@@ -21,7 +21,8 @@ author = 'Garrett Hurst, Ron Bejerano, Shashwat Misra'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon'  # For Google-style docstrings
+    'sphinx.ext.napoleon',  # For Google-style docstrings
+    'sphinx.ext.autosectionlabel'
 ]
 
 templates_path = ['_templates']
