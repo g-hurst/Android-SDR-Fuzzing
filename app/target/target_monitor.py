@@ -127,6 +127,7 @@ class Target_Monitor(threading.Thread):
 
     def kill(self):
         print(f'{self.__class__.__name__}: Stopping thread.')  # Added for clarity
+        self.device.close()
         self._stay_alive.clear()
 
 

@@ -4,7 +4,7 @@ from scapy.all import Ether, IP, TCP, UDP, Raw, sendp, hexdump, bytes_hex, raw, 
 
 
 class Transmitter(threading.Thread):
-    def __init__(self, target_mac='ff:ff:ff:ff:ff:ff', target_ip='192.168.1.1', interface='wlp0s20f3', use_tcp=True):
+    def __init__(self, target_mac='ff:ff:ff:ff:ff:ff', target_ip='192.168.1.1', interface='eth0', use_tcp=True):
         super().__init__()
         self._stay_alive = threading.Event()
         self.interface = interface
