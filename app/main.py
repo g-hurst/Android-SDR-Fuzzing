@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 import time
-import sys
 import argparse
+import configparser
 from target.target_monitor import Target_Monitor
 from cli.cli import CLI  # Import your CLI class from the cli directory
 
+
 def parse_argv():
+    '''
+    This function is just a wrapper for the argparse setup for our cli tool.
+    All of the options for argparse should be added here.
+    '''
     parser = argparse.ArgumentParser(description="Run the CLI application with optional modes.")
     parser.add_argument(
         "-i", "--interactive",
@@ -21,6 +26,7 @@ def parse_argv():
         "-c", "--config",
         type=str,
         metavar="FILE",
+        default='config.ini',
         help="Path to the configuration file"
     )
 
@@ -29,6 +35,13 @@ def parse_argv():
 
 def main():
     args = parse_argv()
+
+    # read the configuration file
+    try:
+        config = configparser.ConfigParser()
+        config.read(args.config)
+    except Exception as e:
+        print(f'error parsing config: {e}')
 
     # Create monitor thread and start it
     try:
@@ -44,7 +57,9 @@ def main():
     if not args.skip_transmitter:
         try:
             from transmitter.transmitter import Transmitter
-            transmitter = Transmitter()
+            transmitter = Transmitter(
+                interface=config['TRANSMITTER']['NetDevice']
+            )
             transmitter.start()
             print("Transmitter started")
         except Exception as e:
