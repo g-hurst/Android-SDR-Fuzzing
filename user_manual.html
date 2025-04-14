@@ -1,0 +1,341 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WiFi Fuzzing Platform User Manual &mdash; Android Wifi Fuzzer  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Source Code Documentation" href="src_code.html" />
+    <link rel="prev" title="Android Wifi Fuzzer documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Android Wifi Fuzzer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">WiFi Fuzzing Platform User Manual</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setup">Setup</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-application">Running the Application</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#interactive-mode">Interactive Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#without-transmitter-for-testing">Without transmitter (for testing)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#background-mode">Background Mode</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#cli-commands">CLI Commands</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#android-device-commands">Android Device Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logging-commands">Logging Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#general-commands">General Commands</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#no-device-connected">No Device Connected</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#usb-connection-issues">USB Connection Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#network-interface-issues">Network Interface Issues</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#source-code">Source Code</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="src_code.html">Source Code Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Android Wifi Fuzzer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">WiFi Fuzzing Platform User Manual</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/user_manual.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="wifi-fuzzing-platform-user-manual">
+<h1>WiFi Fuzzing Platform User Manual<a class="headerlink" href="#wifi-fuzzing-platform-user-manual" title="Link to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>The WiFi Fuzzing Platform is a tool designed for security researchers
+to test Android devices for potential WiFi vulnerabilities.
+This platform monitors device responses to network inputs, collects logs,
+and analyzes behavior.</p>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Linux operating system (or wsl2)</p></li>
+<li><p>Python 3.8 or higher</p></li>
+<li><p><a class="reference external" href="https://developer.android.com/tools/adb">Android Debug Bridge (adb)</a></p></li>
+<li><p>Android device with USB debugging enabled</p></li>
+<li><p>USB cable for connecting the Android device</p></li>
+</ul>
+</section>
+<section id="setup">
+<h3>Setup<a class="headerlink" href="#setup" title="Link to this heading"></a></h3>
+<p>Clone the repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/g-hurst/Android-SDR-Fuzzing.git
+<span class="nb">cd</span><span class="w"> </span>Android-SDR-Fuzzing
+</pre></div>
+</div>
+<p>Install the python dependancies with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>setup
+</pre></div>
+</div>
+<p>Enable USB debugging on your Android device:</p>
+<ul class="simple">
+<li><p>Settings → About phone → Tap “Build number” 7 times</p></li>
+<li><p>Settings → Developer options → Enable “USB debugging”</p></li>
+<li><p>Authorize your computer when prompted</p></li>
+</ul>
+</section>
+</section>
+<section id="running-the-application">
+<h2>Running the Application<a class="headerlink" href="#running-the-application" title="Link to this heading"></a></h2>
+<p>This application uses the <code class="docutils literal notranslate"><span class="pre">scapy</span></code> package and requires sudo privileges;
+the -E flag runs with your current user environment.</p>
+<section id="interactive-mode">
+<h3>Interactive Mode<a class="headerlink" href="#interactive-mode" title="Link to this heading"></a></h3>
+<p>Interactive mode is the how the program is primarily intended to be run.
+When in interactive mode, a cli is spawned that allows for commands to
+be run to interactivly monitor the current status of the fuzzer.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>app
+sudo<span class="w"> </span>-E<span class="w"> </span>./main.py<span class="w"> </span>--interactive
+</pre></div>
+</div>
+</section>
+<section id="without-transmitter-for-testing">
+<h3>Without transmitter (for testing)<a class="headerlink" href="#without-transmitter-for-testing" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>app
+sudo<span class="w"> </span>-E<span class="w"> </span>./main.py<span class="w"> </span>--interactive<span class="w"> </span>--skip-transmitter
+</pre></div>
+</div>
+</section>
+<section id="background-mode">
+<h3>Background Mode<a class="headerlink" href="#background-mode" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>app
+sudo<span class="w"> </span>-E<span class="w"> </span>./main.py
+</pre></div>
+</div>
+</section>
+</section>
+<section id="cli-commands">
+<h2>CLI Commands<a class="headerlink" href="#cli-commands" title="Link to this heading"></a></h2>
+<p>The CLI was written with the python <code class="docutils literal notranslate"><span class="pre">cmd</span></code> library. In addition to what is described
+below, the class for the commands can be found in the source code <a class="reference internal" href="cli.html#module-cli.cli"><span class="std std-ref">cli.cli module</span></a>.</p>
+<section id="android-device-commands">
+<h3>Android Device Commands<a class="headerlink" href="#android-device-commands" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>adb &lt;command&gt;</p></td>
+<td><p>Execute ADB command</p></td>
+<td><p>adb shell ls /sdcard</p></td>
+</tr>
+<tr class="row-odd"><td><p>get_ip</p></td>
+<td><p>Show device IP address</p></td>
+<td><p>get_ip</p></td>
+</tr>
+<tr class="row-even"><td><p>device_info</p></td>
+<td><p>Show device information</p></td>
+<td><p>device_info</p></td>
+</tr>
+<tr class="row-odd"><td><p>wifi_info</p></td>
+<td><p>Show WiFi information</p></td>
+<td><p>wifi_info</p></td>
+</tr>
+<tr class="row-even"><td><p>network_status</p></td>
+<td><p>Show connectivity info</p></td>
+<td><p>network_status</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="logging-commands">
+<h3>Logging Commands<a class="headerlink" href="#logging-commands" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>logs</p></td>
+<td><p>Show device logs</p></td>
+<td><p>logs</p></td>
+</tr>
+<tr class="row-odd"><td><p>logs clear</p></td>
+<td><p>Clear log buffer</p></td>
+<td><p>logs clear</p></td>
+</tr>
+<tr class="row-even"><td><p>logs filter &lt;tag&gt;</p></td>
+<td><p>Filter logs by tag</p></td>
+<td><p>logs filter E</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="general-commands">
+<h3>General Commands<a class="headerlink" href="#general-commands" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>help</p></td>
+<td><p>List all commands</p></td>
+<td><p>help</p></td>
+</tr>
+<tr class="row-odd"><td><p>help &lt;command&gt;</p></td>
+<td><p>Show command help</p></td>
+<td><p>help get_ip</p></td>
+</tr>
+<tr class="row-even"><td><p>exit or quit</p></td>
+<td><p>Exit the CLI</p></td>
+<td><p>exit</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="no-device-connected">
+<h3>No Device Connected<a class="headerlink" href="#no-device-connected" title="Link to this heading"></a></h3>
+<p>If no device is connected, you’ll see messages like:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>&quot;Could not retrieve device IP address&quot;
+&quot;Error: Target Monitor not available&quot;
+</pre></div>
+</div>
+</section>
+<section id="usb-connection-issues">
+<h3>USB Connection Issues<a class="headerlink" href="#usb-connection-issues" title="Link to this heading"></a></h3>
+<p>If you can’t connect to your device:</p>
+<ul class="simple">
+<li><p>Ensure USB debugging is enabled</p></li>
+<li><p>Try a different USB cable</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">adb</span> <span class="pre">kill-server</span></code> (on both host and wsl if running on wsl) to kill any instances of adb that could be preventing a new connection.</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">adb</span> <span class="pre">devices</span></code> to verify connection</p></li>
+</ul>
+</section>
+<section id="network-interface-issues">
+<h3>Network Interface Issues<a class="headerlink" href="#network-interface-issues" title="Link to this heading"></a></h3>
+<p>If the transmitter fails with “No such device” error:</p>
+<ul class="simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">--skip-transmitter</span></code> flag</p></li>
+<li><p>Check network configuration</p></li>
+<li><p>Verify Scapy installation</p></li>
+</ul>
+</section>
+</section>
+<section id="source-code">
+<h2>Source Code<a class="headerlink" href="#source-code" title="Link to this heading"></a></h2>
+<p><a class="reference external" href="https://github.com/g-hurst/Android-SDR-Fuzzing">https://github.com/g-hurst/Android-SDR-Fuzzing</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Android Wifi Fuzzer documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="src_code.html" class="btn btn-neutral float-right" title="Source Code Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Garrett Hurst, Ron Bejerano, Shashwat Misra.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
