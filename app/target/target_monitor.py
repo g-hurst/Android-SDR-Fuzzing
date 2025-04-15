@@ -13,7 +13,7 @@ from adb_shell.adb_device import AdbDeviceUsb
 
 
 class Target_Monitor(threading.Thread):
-    def __init__(self):
+    def __init__(self, tracker):
         super().__init__()
         self._stay_alive = threading.Event()
         self.adb_key_path = os.path.join(
@@ -22,6 +22,7 @@ class Target_Monitor(threading.Thread):
         )  # TODO: this should probably be configurable
         self.device = None
         self.executor = None
+        self.tracker = tracker
 
     def get_adb_signer(self) -> PythonRSASigner:
         # create dir and keys if needed
@@ -196,6 +197,31 @@ class ADB_Executor():
             print("  Relevant battery info not found or command failed.")
         # return  # Implicit None return is fine
 
+class Correlator(threading.Thread):
+    def __init__(self, p_tracker, a_tracker, window=2):
+        super().__init__()
+        self._stay_alive = threading.Event()
+        self.packet_tracker = p_tracker
+        self.anomaly_tracker = a_tracker
+        self.match_window = window
+        self.packet_history = []
+        self.daemon = True
+
+    def correlate_trackers(self):
+        pass
+
+    def run(self):
+        self._stay_alive.set()
+        try:
+            while self._stay_alive.is_set():
+                self.correlate_trackers()
+                self._stay_alive.wait(self.match_window)
+        except KeyboardInterrupt:
+            print(f'Keyboard interrupt in {self.__class__.__name__}'.upper())
+            self.kill()
+
+    def kill(self):
+        self._stay_alive.clear()
 
 # Optional: Add main execution block for testing
 if __name__ == "__main__":

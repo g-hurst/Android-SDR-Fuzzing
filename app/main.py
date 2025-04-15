@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import time
 import sys
-from target.target_monitor import Target_Monitor
+from queue import Queue
+from target.target_monitor import Target_Monitor, Correlator
 from cli.cli import CLI  # Import your CLI class from the cli directory
 
 
@@ -12,7 +13,8 @@ def main():
 
     # Create monitor thread and start it
     try:
-        monitor = Target_Monitor()
+        packet_tracker = Queue()
+        monitor = Target_Monitor(tracker= packet_tracker)
         monitor.start()
         print("Target monitor started")
     except Exception as e:
@@ -24,11 +26,21 @@ def main():
     if not skip_transmitter:
         try:
             from transmitter.transmitter import Transmitter
-            transmitter = Transmitter()
+            anomaly_tracker = Queue()
+            transmitter = Transmitter(tracker= anomaly_tracker)
             transmitter.start()
             print("Transmitter started")
         except Exception as e:
             print(f"Warning: Could not start transmitter: {e}")
+
+    # Create correlator thread and start it
+    try:
+        correlator = Correlator(p_tracker= packet_tracker, a_tracker= anomaly_tracker)
+        correlator.start()
+        print("Correlator started")
+    except Exception as e:
+        print(f"Warning: Could not start correlator: {e}")
+        correlator = None
 
     # Create CLI instance with reference to the target monitor
     cli = CLI(target_monitor=monitor)
@@ -46,6 +58,8 @@ def main():
                 monitor.kill()
             if transmitter:
                 transmitter.kill()
+            if correlator:
+                correlator.kill()
             print('App complete')
             return
 
@@ -68,6 +82,8 @@ def main():
         monitor.kill()
     if transmitter:
         transmitter.kill()
+    if correlator:
+        correlator.kill()
     print('App complete')
 
 

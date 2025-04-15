@@ -1,10 +1,12 @@
 import threading
 import random
+from queue import Queue
+import datetime
 from scapy.all import Ether, IP, TCP, UDP, Raw, sendp, hexdump, bytes_hex, raw, RandMAC
 
 
 class Transmitter(threading.Thread):
-    def __init__(self, target_mac='ff:ff:ff:ff:ff:ff', target_ip='192.168.1.1', interface='eth0', use_tcp=True):
+    def __init__(self, tracker, target_mac='ff:ff:ff:ff:ff:ff', target_ip='192.168.1.1', interface='eth0', use_tcp=True):
         super().__init__()
         self._stay_alive = threading.Event()
         self.interface = interface
@@ -12,6 +14,7 @@ class Transmitter(threading.Thread):
         self.target_ip = target_ip
         self._n_packets_sent = 0
         self.use_tcp = use_tcp
+        self.tracker = tracker
 
         # Initialize default packet structure
         self.reset_packet()
@@ -162,6 +165,10 @@ class Transmitter(threading.Thread):
         self.target_ip = ip
         self.ip.dst = ip
         return self
+    
+    def track_packet(self):
+        self.tracker.put((datetime.datetime.now(), self.get_n_packets_sent(), self.get_packet_hex()))
+        return self
 
     def run(self):
         self._stay_alive.set()
@@ -169,6 +176,7 @@ class Transmitter(threading.Thread):
             while self._stay_alive.is_set():
                 self.reset_packet()
                 self.mutate_packet(0.01)
+                self.track_packet()
                 self.send_frame()
         except KeyboardInterrupt:
             print(f'Keyboard interrupt in {self.__class__.__name__}'.upper())
