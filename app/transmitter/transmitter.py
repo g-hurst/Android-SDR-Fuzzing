@@ -167,7 +167,7 @@ class Transmitter(threading.Thread):
         return self
     
     def track_packet(self):
-        self.tracker.put((datetime.datetime.now(), self.get_n_packets_sent(), self.get_packet_hex()))
+        self.tracker.append((datetime.datetime.now(), self.get_n_packets_sent(), self.get_packet_hex()))
         return self
 
     def run(self):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import time
 import sys
-from queue import Queue
+from collections import deque
 from target.target_monitor import Target_Monitor, Correlator
 from cli.cli import CLI  # Import your CLI class from the cli directory
 
@@ -13,8 +13,8 @@ def main():
 
     # Create monitor thread and start it
     try:
-        packet_tracker = Queue()
-        monitor = Target_Monitor(tracker= packet_tracker)
+        anomaly_tracker = deque()
+        monitor = Target_Monitor(tracker= anomaly_tracker)
         monitor.start()
         print("Target monitor started")
     except Exception as e:
@@ -26,8 +26,8 @@ def main():
     if not skip_transmitter:
         try:
             from transmitter.transmitter import Transmitter
-            anomaly_tracker = Queue()
-            transmitter = Transmitter(tracker= anomaly_tracker)
+            packet_tracker = deque()
+            transmitter = Transmitter(tracker= packet_tracker)
             transmitter.start()
             print("Transmitter started")
         except Exception as e:

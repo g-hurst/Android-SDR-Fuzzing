@@ -7,6 +7,8 @@ Provides monitoring capabilities for the Android target device.
 
 import threading
 import os
+import datetime
+import random
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from adb_shell.adb_device import AdbDeviceUsb
@@ -86,6 +88,12 @@ class Target_Monitor(threading.Thread):
         except Exception as e:
             print(f"Error getting device IP: {e}")
             return None
+    
+    def track_errors(self):
+        # Parse for error signals - ANR, Native Crashes, SIGSEV, FATAL, WTF
+        # Monitor resource pressures - CPU, RAM, Memory Leakages,
+        self.tracker.append((datetime.datetime.now(), f"TEST #{random.randint(10000, 99999)}"))
+        return self
 
     def run(self):
         # connect to the phone
@@ -108,8 +116,14 @@ class Target_Monitor(threading.Thread):
 
         # run loop for thread
         self._stay_alive.set()
+        check = datetime.datetime.now()
         try:
             while self._stay_alive.is_set():
+                current_time = datetime.datetime.now()
+
+                if (current_time - check).total_seconds() >= 5:
+                    self.track_errors()
+                    check = current_time
                 # Just sleep a short time to prevent CPU spinning
                 # Consider adding a check for device availability here
                 self._stay_alive.wait(0.1)
@@ -204,11 +218,26 @@ class Correlator(threading.Thread):
         self.packet_tracker = p_tracker
         self.anomaly_tracker = a_tracker
         self.match_window = window
-        self.packet_history = []
+        self.anomaly_ctr = 0
         self.daemon = True
 
     def correlate_trackers(self):
-        pass
+        if len(self.anomaly_tracker) > self.anomaly_ctr:
+            anomaly_history = list(self.anomaly_tracker)[self.anomaly_ctr:]
+            packet_history = list(self.packet_tracker)[-100:]
+            for idx, anomaly in enumerate(anomaly_history):
+                log_idx = self.anomaly_ctr + idx
+                with open(f"anomaly{log_idx}.log","w") as outfile:
+                    print(anomaly)
+                    outfile.write(f"Time Detected: {anomaly[0]}\n\n")
+                    outfile.write(f"{anomaly[1]}\n\n\n")
+                    for packet in packet_history:
+                        if (anomaly[0] - datetime.timedelta(seconds= self.match_window / 2)) <= \
+                        packet[0] <= (anomaly[0] + datetime.timedelta(seconds= self.match_window / 2)):
+                            outfile.write(f"{packet[1]} @ {packet[0]} -> {packet[2]}\n")
+            self.anomaly_ctr = len(self.anomaly_tracker)        
+        else:
+            pass
 
     def run(self):
         self._stay_alive.set()
