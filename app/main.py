@@ -63,7 +63,7 @@ def main():
         try:
             from transmitter.transmitter import Transmitter
             transmitter = Transmitter(tracker=packet_tracker,
-                                      interface=config['TRANSMITTER']['NetDevice'])
+                                     interface=config['TRANSMITTER']['NetDevice'])
             transmitter.start()
             print("Transmitter started")
         except Exception as e:
@@ -79,9 +79,9 @@ def main():
         correlator = None
 
     # Create CLI instance with references to monitor and trackers
-    cli = CLI(target_monitor=monitor, 
-              packet_tracker=packet_tracker, 
-              anomaly_tracker=anomaly_tracker)
+    cli = CLI(target_monitor=monitor,
+             packet_tracker=packet_tracker,
+             anomaly_tracker=anomaly_tracker)
 
     if args.interactive:
         # Run the interactive CLI

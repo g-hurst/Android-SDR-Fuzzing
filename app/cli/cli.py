@@ -146,7 +146,6 @@ class CLI(cmd.Cmd):
                 line = line.strip()
                 if any(x in line for x in ["state UP", "inet ", "link/ether"]):
                     print(line)
-            
         except Exception as e:
             print(f"Error checking network configuration: {e}")
 
