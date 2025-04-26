@@ -1,4 +1,5 @@
 import pytest
+from collections import deque
 from unittest.mock import patch, MagicMock
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from adb_shell.adb_device import AdbDeviceUsb
@@ -7,7 +8,8 @@ from target_monitor import Target_Monitor, ADB_Executor  # Assuming the class is
 
 @pytest.fixture
 def target_monitor():
-    return Target_Monitor()
+    anomaly_tracker = deque()
+    return Target_Monitor(tracker= anomaly_tracker)
 
 
 @pytest.fixture

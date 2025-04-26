@@ -1,6 +1,5 @@
 import threading
 import random
-from queue import Queue
 import datetime
 from scapy.all import Ether, IP, TCP, UDP, Raw, sendp, hexdump, bytes_hex, raw, RandMAC
 
@@ -165,7 +164,7 @@ class Transmitter(threading.Thread):
         self.target_ip = ip
         self.ip.dst = ip
         return self
-    
+
     def track_packet(self):
         self.tracker.append((datetime.datetime.now(), self.get_n_packets_sent(), self.get_packet_hex()))
         return self

@@ -8,7 +8,6 @@ Provides monitoring capabilities for the Android target device.
 import threading
 import os
 import datetime
-import random
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from adb_shell.adb_device import AdbDeviceUsb
@@ -90,7 +89,7 @@ class Target_Monitor(threading.Thread):
         except Exception as e:
             print(f"Error getting device IP: {e}")
             return None
-    
+
     def track_errors(self):
         if not self.device or not self.executor:
             return None
@@ -102,7 +101,7 @@ class Target_Monitor(threading.Thread):
     
     def _parse_fatals(self):
         try:
-            cmd_logcat = ("logcat -d | grep -i -E 'fatal signal|fatal exception|anr in|"
+            cmd_logcat = (r"logcat -d | grep -i -E 'fatal signal|fatal exception|anr in|"
                           "sigsegv|sigabrt|sigbus|java\.lang\.(runtime|nullpointer|"
                           "illegalstate)exception' | grep -v 'phenotypemodule' |"
                           " grep -v 'com.google.android.gms' | grep -v 'gms\.chimera' |"
@@ -115,13 +114,13 @@ class Target_Monitor(threading.Thread):
         except Exception as e:
             print(f"Parse Fatals error: {e}")
             return None
-        
+
     def _monitor_resources(self):
         try:
             cmd_cpu = ("top -n 1 | grep -i 'cpu'")
             cpu_dump = self.executor.adb_exec(cmd_cpu).strip()
-            cpu_usage = float(cpu_dump.split(f'%idle')[0].split()[-1])
-            
+            cpu_usage = float(cpu_dump.split(r'%idle')[0].split()[-1])
+
             cmd_mem = ("dumpsys meminfo | grep -i 'ram'")
             mem_dump = self.executor.adb_exec(cmd_mem).strip()
             mem_total = None
@@ -137,7 +136,7 @@ class Target_Monitor(threading.Thread):
                 ram_usage_percentage = (mem_used / mem_total) * 100
             else:
                 ram_usage_percentage = None
-                
+  
             spike_threshold = 1.2
             if not self.base_cpu and not self.base_ram:
                 self.base_cpu = cpu_usage
@@ -266,6 +265,7 @@ class ADB_Executor():
             print("  Relevant battery info not found or command failed.")
         # return  # Implicit None return is fine
 
+
 class Correlator(threading.Thread):
     def __init__(self, p_tracker, a_tracker, window=2):
         super().__init__()
@@ -282,16 +282,15 @@ class Correlator(threading.Thread):
             packet_history = list(self.packet_tracker)[-100:]
             for idx, anomaly in enumerate(anomaly_history):
                 log_idx = self.anomaly_ctr + idx
-                with open(f"anomaly{log_idx}.log","w") as outfile:
-                    print(anomaly)
+                with open(f"anomaly{log_idx}.log", "w") as outfile:
                     outfile.write(f"Time Detected: {anomaly[0]}\n\n")
                     outfile.write(f"Type: {anomaly[1]}\n\n")
                     outfile.write(f"{anomaly[2]}\n\n\n")
                     for packet in packet_history:
-                        if (anomaly[0] - datetime.timedelta(seconds= self.match_window / 2)) <= \
-                        packet[0] <= (anomaly[0] + datetime.timedelta(seconds= self.match_window / 2)):
+                        if (anomaly[0] - datetime.timedelta(seconds=self.match_window / 2)) <= \
+                            packet[0] <= (anomaly[0] + datetime.timedelta(seconds=self.match_window / 2)):
                             outfile.write(f"{packet[1]} @ {packet[0]} -> {packet[2]}\n")
-            self.anomaly_ctr = len(self.anomaly_tracker)        
+            self.anomaly_ctr = len(self.anomaly_tracker)    
         else:
             pass
 
@@ -307,6 +306,7 @@ class Correlator(threading.Thread):
 
     def kill(self):
         self._stay_alive.clear()
+
 
 # Optional: Add main execution block for testing
 if __name__ == "__main__":

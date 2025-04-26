@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import time
-import sys
 import argparse
 import configparser
 from collections import deque
@@ -48,7 +47,7 @@ def main():
     # Create monitor thread and start it
     try:
         anomaly_tracker = deque()
-        monitor = Target_Monitor(tracker= anomaly_tracker)
+        monitor = Target_Monitor(tracker=anomaly_tracker)
         monitor.start()
         print("Target monitor started")
     except Exception as e:
@@ -61,9 +60,8 @@ def main():
         try:
             from transmitter.transmitter import Transmitter
             packet_tracker = deque()
-            transmitter = Transmitter(tracker= packet_tracker,
-                interface=config['TRANSMITTER']['NetDevice']
-            )
+            transmitter = Transmitter(tracker=packet_tracker,
+                                      interface=config['TRANSMITTER']['NetDevice'])
             transmitter.start()
             print("Transmitter started")
         except Exception as e:
@@ -71,7 +69,7 @@ def main():
 
     # Create correlator thread and start it
     try:
-        correlator = Correlator(p_tracker= packet_tracker, a_tracker= anomaly_tracker)
+        correlator = Correlator(p_tracker=packet_tracker, a_tracker=anomaly_tracker)
         correlator.start()
         print("Correlator started")
     except Exception as e:
