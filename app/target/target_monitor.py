@@ -98,13 +98,13 @@ class Target_Monitor(threading.Thread):
         # Monitor resource pressures - CPU, RAM, Memory Leakages,
         self._monitor_resources()
         return self
-    
+
     def _parse_fatals(self):
         try:
             cmd_logcat = (r"logcat -d | grep -i -E 'fatal signal|fatal exception|anr in|"
-                          "sigsegv|sigabrt|sigbus|java\.lang\.(runtime|nullpointer|"
+                          "sigsegv|sigabrt|sigbus|java\\.lang\\.(runtime|nullpointer|"
                           "illegalstate)exception' | grep -v 'phenotypemodule' |"
-                          " grep -v 'com.google.android.gms' | grep -v 'gms\.chimera' |"
+                          " grep -v 'com.google.android.gms' | grep -v 'gms\\.chimera' |"
                           " grep -i -v 'managedchannel'")
             logcat_dump = self.executor.adb_exec(cmd_logcat).strip()
             if logcat_dump:
@@ -136,7 +136,7 @@ class Target_Monitor(threading.Thread):
                 ram_usage_percentage = (mem_used / mem_total) * 100
             else:
                 ram_usage_percentage = None
-  
+
             spike_threshold = 1.2
             if not self.base_cpu and not self.base_ram:
                 self.base_cpu = cpu_usage
@@ -288,9 +288,9 @@ class Correlator(threading.Thread):
                     outfile.write(f"{anomaly[2]}\n\n\n")
                     for packet in packet_history:
                         if (anomaly[0] - datetime.timedelta(seconds=self.match_window / 2)) <= \
-                            packet[0] <= (anomaly[0] + datetime.timedelta(seconds=self.match_window / 2)):
+                                packet[0] <= (anomaly[0] + datetime.timedelta(seconds=self.match_window / 2)):
                             outfile.write(f"{packet[1]} @ {packet[0]} -> {packet[2]}\n")
-            self.anomaly_ctr = len(self.anomaly_tracker)    
+            self.anomaly_ctr = len(self.anomaly_tracker)
         else:
             pass
 
