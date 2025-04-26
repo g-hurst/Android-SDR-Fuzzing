@@ -13,6 +13,7 @@ def parse_argv():
     All of the options for argparse should be added here.
     '''
     parser = argparse.ArgumentParser(description="Run the CLI application with optional modes.")
+    parser.add_argument(a.ArgumentParser(description="Run the CLI application with optional modes.")
     parser.add_argument(
         "-i", "--interactive",
         action="store_true",
@@ -63,7 +64,7 @@ def main():
         try:
             from transmitter.transmitter import Transmitter
             transmitter = Transmitter(tracker=packet_tracker,
-                                     interface=config['TRANSMITTER']['NetDevice'])
+                                      interface=config['TRANSMITTER']['NetDevice'])
             transmitter.start()
             print("Transmitter started")
         except Exception as e:
@@ -80,8 +81,8 @@ def main():
 
     # Create CLI instance with references to monitor and trackers
     cli = CLI(target_monitor=monitor,
-             packet_tracker=packet_tracker,
-             anomaly_tracker=anomaly_tracker)
+              packet_tracker=packet_tracker,
+              anomaly_tracker=anomaly_tracker)
 
     if args.interactive:
         # Run the interactive CLI
