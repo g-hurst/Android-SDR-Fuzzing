@@ -1,15 +1,49 @@
 #!/usr/bin/env python3
 import time
 import sys
+import argparse
+import configparser
 from collections import deque
 from target.target_monitor import Target_Monitor, Correlator
 from cli.cli import CLI  # Import your CLI class from the cli directory
 
 
+def parse_argv():
+    '''
+    This function is just a wrapper for the argparse setup for our cli tool.
+    All of the options for argparse should be added here.
+    '''
+    parser = argparse.ArgumentParser(description="Run the CLI application with optional modes.")
+    parser.add_argument(
+        "-i", "--interactive",
+        action="store_true",
+        help="Run the CLI in interactive mode"
+    )
+    parser.add_argument(
+        "--skip-transmitter",
+        action="store_true",
+        help="Skip starting the transmitter"
+    )
+    parser.add_argument(
+        "-c", "--config",
+        type=str,
+        metavar="FILE",
+        default='config.ini',
+        help="Path to the configuration file"
+    )
+
+    return parser.parse_args()
+
+
 def main():
-    # Check if we should run in interactive mode
-    interactive_mode = "--interactive" in sys.argv or "-i" in sys.argv
-    skip_transmitter = "--skip-transmitter" in sys.argv
+    args = parse_argv()
+
+    # read the configuration file
+    try:
+        config = configparser.ConfigParser()
+        config.read(args.config)
+    except Exception as e:
+        print(f'error parsing config: {e}')
 
     # Create monitor thread and start it
     try:
@@ -23,11 +57,13 @@ def main():
 
     # Initialize transmitter if not skipped
     transmitter = None
-    if not skip_transmitter:
+    if not args.skip_transmitter:
         try:
             from transmitter.transmitter import Transmitter
             packet_tracker = deque()
-            transmitter = Transmitter(tracker= packet_tracker)
+            transmitter = Transmitter(tracker= packet_tracker,
+                interface=config['TRANSMITTER']['NetDevice']
+            )
             transmitter.start()
             print("Transmitter started")
         except Exception as e:
@@ -45,7 +81,7 @@ def main():
     # Create CLI instance with reference to the target monitor
     cli = CLI(target_monitor=monitor)
 
-    if interactive_mode:
+    if args.interactive:
         # Run the interactive CLI
         try:
             print("Starting interactive CLI mode. Use Ctrl+D to exit.")

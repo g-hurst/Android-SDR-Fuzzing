@@ -24,6 +24,6 @@ For more information on installation, running of the application, or troublehoot
 ## Contributors
 
 This project is the resulting effort of three Purdue University Computer Engineering seniors as part of their senior capstone and is maintained by the same three:
-- @g-hurst
-- @rbejerano-3
-- @misra22
+- [Garrett Hurst](https://garrett-hurst.com/)
+- [Ron Bejerano](https://www.linkedin.com/in/rbej3/)
+- [Shashwat Mirsa](https://www.linkedin.com/in/shashwat-misra-02690422a/)
