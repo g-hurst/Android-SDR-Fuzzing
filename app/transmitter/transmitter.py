@@ -166,6 +166,7 @@ class Transmitter(threading.Thread):
         return self
 
     def track_packet(self):
+        """Tracks packets being sent for further analysis"""
         self.tracker.append((datetime.datetime.now(), self.get_n_packets_sent(), self.get_packet_hex()))
         return self
 

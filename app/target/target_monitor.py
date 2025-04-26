@@ -91,6 +91,9 @@ class Target_Monitor(threading.Thread):
             return None
 
     def track_errors(self):
+        """
+        Monitors target device for errors involving 
+        fatal signals or strained resource pressure."""
         if not self.device or not self.executor:
             return None
         # Parse for error signals - ANR, Native Crashes, SIGSEV, FATAL, WTF
@@ -277,6 +280,10 @@ class Correlator(threading.Thread):
         self.daemon = True
 
     def correlate_trackers(self):
+        """
+        Compares queue of flagged anomalies/errors detected from device
+        with log of packets sent in a certain timeframe to which is then
+        forwarded to a log file of the error and potential damage-inducing packets"""
         if len(self.anomaly_tracker) > self.anomaly_ctr:
             anomaly_history = list(self.anomaly_tracker)[self.anomaly_ctr:]
             packet_history = list(self.packet_tracker)[-100:]
