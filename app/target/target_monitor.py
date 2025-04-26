@@ -92,7 +92,7 @@ class Target_Monitor(threading.Thread):
 
     def track_errors(self):
         """
-        Monitors target device for errors involving 
+        Monitors target device for errors involving
         fatal signals or strained resource pressure."""
         if not self.device or not self.executor:
             return None
