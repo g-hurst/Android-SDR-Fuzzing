@@ -4,7 +4,7 @@ import argparse
 import configparser
 from collections import deque
 from target.target_monitor import Target_Monitor, Correlator
-from cli.cli import CLI  
+from cli.cli import CLI
 
 
 def parse_argv():
