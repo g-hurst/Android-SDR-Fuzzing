@@ -24,6 +24,8 @@ class Target_Monitor(threading.Thread):
         )  # TODO: this should probably be configurable
         self.device = None
         self.executor = None
+        self.base_cpu = None
+        self.base_ram = None
         self.tracker = tracker
 
     def get_adb_signer(self) -> PythonRSASigner:
@@ -90,10 +92,63 @@ class Target_Monitor(threading.Thread):
             return None
     
     def track_errors(self):
+        if not self.device or not self.executor:
+            return None
         # Parse for error signals - ANR, Native Crashes, SIGSEV, FATAL, WTF
+        self._parse_fatals()
         # Monitor resource pressures - CPU, RAM, Memory Leakages,
-        self.tracker.append((datetime.datetime.now(), f"TEST #{random.randint(10000, 99999)}"))
+        self._monitor_resources()
         return self
+    
+    def _parse_fatals(self):
+        try:
+            cmd_logcat = ("logcat -d | grep -i -E 'fatal signal|fatal exception|anr in|"
+                          "sigsegv|sigabrt|sigbus|java\.lang\.(runtime|nullpointer|"
+                          "illegalstate)exception' | grep -v 'phenotypemodule' |"
+                          " grep -v 'com.google.android.gms' | grep -v 'gms\.chimera' |"
+                          " grep -i -v 'managedchannel'")
+            logcat_dump = self.executor.adb_exec(cmd_logcat).strip()
+            if logcat_dump:
+                for item in logcat_dump.split('\n'):
+                    self.tracker.append((datetime.datetime.now(), "Fatal Error", item))
+            return self
+        except Exception as e:
+            print(f"Parse Fatals error: {e}")
+            return None
+        
+    def _monitor_resources(self):
+        try:
+            cmd_cpu = ("top -n 1 | grep -i 'cpu'")
+            cpu_dump = self.executor.adb_exec(cmd_cpu).strip()
+            cpu_usage = float(cpu_dump.split(f'%idle')[0].split()[-1])
+            
+            cmd_mem = ("dumpsys meminfo | grep -i 'ram'")
+            mem_dump = self.executor.adb_exec(cmd_mem).strip()
+            mem_total = None
+            mem_used = None
+            for line in mem_dump.splitlines():
+                if "Total RAM" in line:
+                    clean_line = line.replace(':', '')
+                    mem_total = float(clean_line.split()[2].replace(',', '').replace('K', ''))
+                if "Used RAM" in line:
+                    clean_line = line.replace(':', '')
+                    mem_used = float(clean_line.split()[2].replace(',', '').replace('K', ''))
+            if mem_total and mem_used:
+                ram_usage_percentage = (mem_used / mem_total) * 100
+            else:
+                ram_usage_percentage = None
+                
+            spike_threshold = 1.2
+            if not self.base_cpu and not self.base_ram:
+                self.base_cpu = cpu_usage
+                self.base_ram = ram_usage_percentage
+            if self.base_cpu and self.base_ram:
+                if cpu_usage >= self.base_cpu * spike_threshold or ram_usage_percentage >= self.base_ram * spike_threshold:
+                    self.tracker.append((datetime.datetime.now(), "Resource Pressure", f"CPU: {self.base_cpu} -> {cpu_usage}, RAM: {self.base_ram} -> {ram_usage_percentage}"))
+            return self
+        except Exception as e:
+            print(f"Parse Fatals error: {e}")
+            return None
 
     def run(self):
         # connect to the phone
@@ -230,7 +285,8 @@ class Correlator(threading.Thread):
                 with open(f"anomaly{log_idx}.log","w") as outfile:
                     print(anomaly)
                     outfile.write(f"Time Detected: {anomaly[0]}\n\n")
-                    outfile.write(f"{anomaly[1]}\n\n\n")
+                    outfile.write(f"Type: {anomaly[1]}\n\n")
+                    outfile.write(f"{anomaly[2]}\n\n\n")
                     for packet in packet_history:
                         if (anomaly[0] - datetime.timedelta(seconds= self.match_window / 2)) <= \
                         packet[0] <= (anomaly[0] + datetime.timedelta(seconds= self.match_window / 2)):
