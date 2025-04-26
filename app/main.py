@@ -2,7 +2,8 @@
 import time
 import argparse
 import configparser
-from target.target_monitor import Target_Monitor
+from collections import deque
+from target.target_monitor import Target_Monitor, Correlator
 from cli.cli import CLI  # Import your CLI class from the cli directory
 
 
@@ -45,7 +46,8 @@ def main():
 
     # Create monitor thread and start it
     try:
-        monitor = Target_Monitor()
+        anomaly_tracker = deque()
+        monitor = Target_Monitor(tracker=anomaly_tracker)
         monitor.start()
         print("Target monitor started")
     except Exception as e:
@@ -57,13 +59,22 @@ def main():
     if not args.skip_transmitter:
         try:
             from transmitter.transmitter import Transmitter
-            transmitter = Transmitter(
-                interface=config['TRANSMITTER']['NetDevice']
-            )
+            packet_tracker = deque()
+            transmitter = Transmitter(tracker=packet_tracker,
+                                      interface=config['TRANSMITTER']['NetDevice'])
             transmitter.start()
             print("Transmitter started")
         except Exception as e:
             print(f"Warning: Could not start transmitter: {e}")
+
+    # Create correlator thread and start it
+    try:
+        correlator = Correlator(p_tracker=packet_tracker, a_tracker=anomaly_tracker)
+        correlator.start()
+        print("Correlator started")
+    except Exception as e:
+        print(f"Warning: Could not start correlator: {e}")
+        correlator = None
 
     # Create CLI instance with reference to the target monitor
     cli = CLI(target_monitor=monitor)
@@ -81,6 +92,8 @@ def main():
                 monitor.kill()
             if transmitter:
                 transmitter.kill()
+            if correlator:
+                correlator.kill()
             print('App complete')
             return
 
@@ -103,6 +116,8 @@ def main():
         monitor.kill()
     if transmitter:
         transmitter.kill()
+    if correlator:
+        correlator.kill()
     print('App complete')
 
 
