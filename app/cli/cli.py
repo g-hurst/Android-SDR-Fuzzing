@@ -2,7 +2,7 @@
 """
 CLI Module
 ---------
-Provides CLI functionality for the WiFi fuzzing platform,
+This provides CLI functionality for the WiFi fuzzing platform,
 with focus on Android device interaction for WiFi testing.
 """
 

@@ -13,7 +13,6 @@ def parse_argv():
     All of the options for argparse should be added here.
     '''
     parser = argparse.ArgumentParser(description="Run the CLI application with optional modes.")
-    parser.add_argument(a.ArgumentParser(description="Run the CLI application with optional modes.")
     parser.add_argument(
         "-i", "--interactive",
         action="store_true",
