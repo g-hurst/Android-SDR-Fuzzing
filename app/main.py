@@ -4,7 +4,7 @@ import argparse
 import configparser
 from collections import deque
 from target.target_monitor import Target_Monitor, Correlator
-from cli.cli import CLI  # Import your CLI class from the cli directory
+from cli.cli import CLI
 
 
 def parse_argv():
@@ -44,9 +44,12 @@ def main():
     except Exception as e:
         print(f'error parsing config: {e}')
 
+    # Initialize trackers
+    packet_tracker = deque()
+    anomaly_tracker = deque()
+
     # Create monitor thread and start it
     try:
-        anomaly_tracker = deque()
         monitor = Target_Monitor(tracker=anomaly_tracker)
         monitor.start()
         print("Target monitor started")
@@ -59,7 +62,6 @@ def main():
     if not args.skip_transmitter:
         try:
             from transmitter.transmitter import Transmitter
-            packet_tracker = deque()
             transmitter = Transmitter(tracker=packet_tracker,
                                       interface=config['TRANSMITTER']['NetDevice'])
             transmitter.start()
@@ -76,8 +78,10 @@ def main():
         print(f"Warning: Could not start correlator: {e}")
         correlator = None
 
-    # Create CLI instance with reference to the target monitor
-    cli = CLI(target_monitor=monitor)
+    # Create CLI instance with references to monitor and trackers
+    cli = CLI(target_monitor=monitor,
+              packet_tracker=packet_tracker,
+              anomaly_tracker=anomaly_tracker)
 
     if args.interactive:
         # Run the interactive CLI
