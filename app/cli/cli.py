@@ -37,6 +37,42 @@ class CLI(cmd.Cmd):
         self.packet_tracker = packet_tracker
         self.anomaly_tracker = anomaly_tracker
 
+    # Override cmdloop to catch KeyboardInterrupt completely
+    def cmdloop(self, intro=None):
+        """Repeatedly issue a prompt, accept input, parse an initial prefix
+        off the received input, and dispatch to action methods, passing them
+        the remainder of the line as argument.
+
+        This is overridden to catch KeyboardInterrupt and prevent it from
+        propagating up to the main program.
+        """
+        self.preloop()
+        if intro is not None:
+            self.intro = intro
+        if self.intro:
+            self.stdout.write(str(self.intro) + "\n")
+        stop = None
+        while not stop:
+            try:
+                if self.cmdqueue:
+                    line = self.cmdqueue.pop(0)
+                else:
+                    line = self.get_input()
+                line = self.precmd(line)
+                stop = self.onecmd(line)
+                stop = self.postcmd(stop, line)
+            except KeyboardInterrupt:
+                print("\nKeyboard interrupt received. Type 'exit' to quit.")
+                continue
+        self.postloop()
+
+    def get_input(self):
+        """Get input from the user, wrapping standard input in a try/except."""
+        try:
+            return input(self.prompt)
+        except EOFError:
+            return 'EOF'
+
     # ===== Android Device Commands =====
     def do_adb(self, arg):
         """
@@ -148,6 +184,181 @@ class CLI(cmd.Cmd):
                     print(line)
         except Exception as e:
             print(f"Error checking network configuration: {e}")
+
+    def do_packet_stats(self, arg):
+        """
+        Display statistics about packets being sent and received.
+        Usage: packet_stats
+        """
+        if not self.packet_tracker:
+            print("Error: Packet tracker not available. Make sure the transmitter is running.")
+            return
+
+        packets = list(self.packet_tracker)
+        if not packets:
+            print("No packets have been sent yet.")
+            return
+
+        # Count total packets
+        total_packets = len(packets)
+
+        # Analyze packet types
+        tcp_count = 0
+        udp_count = 0
+        other_count = 0
+
+        for _, _, packet_hex in packets:
+            if "TCP" in packet_hex:
+                tcp_count += 1
+            elif "UDP" in packet_hex:
+                udp_count += 1
+            else:
+                other_count += 1
+
+        # Calculate packet rate
+        if len(packets) >= 2:
+            start_time = packets[0][0]
+            end_time = packets[-1][0]
+            time_diff = (end_time - start_time).total_seconds()
+            rate = len(packets) / time_diff if time_diff > 0 else 0
+        else:
+            rate = 0
+
+        # Display statistics
+        print("\n===== Packet Statistics =====")
+        print(f"Total Packets Sent: {total_packets}")
+        print(f"Packet Rate: {rate:.2f} packets/second")
+
+        print("\n----- Packet Types -----")
+        print(f"TCP Packets: {tcp_count} ({tcp_count / total_packets * 100:.1f}%)")
+        print(f"UDP Packets: {udp_count} ({udp_count / total_packets * 100:.1f}%)")
+        print(f"Other Packets: {other_count} ({other_count / total_packets * 100:.1f}%)")
+
+        # Display recent packets
+        print("\n----- Recent Packets -----")
+        for timestamp, packet_num, packet_hex in packets[-5:]:
+            print(f"Packet {packet_num} @ {timestamp.strftime('%H:%M:%S.%f')[:-3]}: {packet_hex[:60]}...")
+
+    def do_monitor(self, arg):
+        """
+        Display status of what monitors can see, including packets and anomalies.
+        Usage: monitor [refresh_seconds]
+        Example: monitor 5 - Refreshes the display every 5 seconds
+        """
+        import time
+        import os
+        import signal
+
+        # Parse refresh interval
+        try:
+            refresh = int(arg) if arg else 5  # Default to 5 seconds if no value provided
+        except ValueError:
+            print("Error: Invalid refresh interval. Please enter a number in seconds.")
+            return
+
+        # Prepare for continuous monitoring with refresh
+        running = True
+
+        def handle_interrupt(sig, frame):
+            nonlocal running
+            running = False
+            print("\nStopping monitor...")
+
+        # Set up signal handler for Ctrl+C
+        original_handler = signal.getsignal(signal.SIGINT)
+        signal.signal(signal.SIGINT, handle_interrupt)
+
+        try:
+            while running:
+                try:
+                    # Clear screen for each refresh
+                    os.system('cls' if os.name == 'nt' else 'clear')
+
+                    # Title
+                    print("\n===== WiFi Fuzzing Platform Status Monitor =====")
+                    print(f"Time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+                    # Device information
+                    if self.target_monitor:
+                        device_ip = self.target_monitor.get_device_ip()
+                        print(f"\nDevice IP: {device_ip if device_ip else 'Unknown'}")
+                    else:
+                        print("\nDevice: Not connected")
+
+                    # Packet statistics
+                    if self.packet_tracker:
+                        packets = list(self.packet_tracker)
+                        packet_count = len(packets)
+                        # Calculate packet rate from recent packets
+                        recent_rate = 0
+                        if packet_count >= 2:
+                            # Use last 10 packets or all if fewer
+                            recent_packets = packets[-min(10, packet_count):]
+                            start_time = recent_packets[0][0]
+                            end_time = recent_packets[-1][0]
+                            time_diff = (end_time - start_time).total_seconds()
+                            recent_rate = len(recent_packets) / time_diff if time_diff > 0 else 0
+                        print("\n----- Packet Statistics -----")
+                        print(f"Total Packets Sent: {packet_count}")
+                        print(f"Recent Rate: {recent_rate:.2f} packets/second")
+                        # Show most recent packet
+                        if packet_count > 0:
+                            _, packet_num, packet_hex = packets[-1]
+                            print(f"Last Packet: #{packet_num} - {packet_hex[:50]}...")
+                    else:
+                        print("\n----- Packet Statistics -----")
+                        print("Packet tracking not available")
+
+                    # Anomaly information
+                    if self.anomaly_tracker:
+                        anomalies = list(self.anomaly_tracker)
+                        anomaly_count = len(anomalies)
+                        print("\n----- Anomalies Detected -----")
+                        print(f"Total Anomalies: {anomaly_count}")
+                        # Recent anomalies (if any)
+                        if anomaly_count > 0:
+                            print("\nRecent Anomalies:")
+                            for timestamp, anomaly_type, description in anomalies[-min(3, anomaly_count):]:
+                                print(f"  {timestamp.strftime('%H:%M:%S')}: {anomaly_type} - {description[:50]}...")
+                    else:
+                        print("\n----- Anomalies Detected -----")
+                        print("Anomaly tracking not available")
+                    # Show network connection status
+                    if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+                        try:
+                            gateway_cmd = "ip route | grep default | awk '{print $3}'"
+                            gateway = self.target_monitor.executor.adb_exec(gateway_cmd).strip()
+                            if gateway:
+                                ping_cmd = f"ping -c 1 -W 1 {gateway}"
+                                ping_result = self.target_monitor.executor.adb_exec(ping_cmd)
+                                print("\n----- Network Status -----")
+                                if "1 received" in ping_result:
+                                    print("Gateway Connection: UP")
+                                else:
+                                    print("Gateway Connection: DOWN")
+                        except Exception:
+                            pass
+                    # Show helper message
+                    print("\nPress Ctrl+C to stop monitoring and return to CLI")
+
+                    # Always sleep for refresh interval - this is the key change
+                    time.sleep(refresh)
+
+                except KeyboardInterrupt:
+                    running = False
+                    print("\nStopping monitor...")
+                    break
+                except Exception as e:
+                    print(f"Error in monitor: {e}")
+                    running = False
+                    break
+
+        finally:
+            # Restore original signal handler
+            signal.signal(signal.SIGINT, original_handler)
+            # Print a message to indicate returning to CLI
+            print("\nReturning to CLI prompt...")
+            return
 
     def do_logs(self, arg):
         """
