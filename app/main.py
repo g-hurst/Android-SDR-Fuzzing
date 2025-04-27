@@ -92,12 +92,7 @@ def main():
             print("\nReceived keyboard interrupt. Shutting down...")
         finally:
             # Cleanup threads
-            if monitor:
-                monitor.kill()
-            if transmitter:
-                transmitter.kill()
-            if correlator:
-                correlator.kill()
+            cleanup_threads(monitor, transmitter, correlator)
             print('App complete')
             return
 
@@ -116,13 +111,35 @@ def main():
             break
 
     # Cleanup threads
-    if monitor:
-        monitor.kill()
-    if transmitter:
-        transmitter.kill()
-    if correlator:
-        correlator.kill()
+    cleanup_threads(monitor, transmitter, correlator)
     print('App complete')
+
+
+def cleanup_threads(monitor, transmitter, correlator):
+    """Safely cleanup all threads."""
+    # Cleanup the monitor
+    if monitor:
+        try:
+            monitor.kill()
+        except AttributeError:
+            # Handle the case where device is None
+            print("Note: Monitor device was not fully initialized")
+        except Exception as e:
+            print(f"Warning: Error during monitor cleanup: {e}")
+
+    # Cleanup the transmitter
+    if transmitter:
+        try:
+            transmitter.kill()
+        except Exception as e:
+            print(f"Warning: Error during transmitter cleanup: {e}")
+
+    # Cleanup the correlator
+    if correlator:
+        try:
+            correlator.kill()
+        except Exception as e:
+            print(f"Warning: Error during correlator cleanup: {e}")
 
 
 if __name__ == '__main__':
