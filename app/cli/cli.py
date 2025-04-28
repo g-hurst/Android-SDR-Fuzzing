@@ -322,7 +322,7 @@ class CLI(cmd.Cmd):
                                 print(f"  {timestamp.strftime('%H:%M:%S')}: {anomaly_type} - {description[:50]}...")
                     else:
                         print("\n----- Anomalies Detected -----")
-                        print("Anomaly tracking not available")
+                        print("No recent anomalies detected")
                     # Show network connection status
                     if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
                         try:
