@@ -49,6 +49,11 @@ def main():
     packet_tracker = deque()
     anomaly_tracker = deque()
 
+    # Initialize thread objects
+    monitor = None
+    transmitter = None
+    correlator = None
+
     # Create monitor thread and start it
     try:
         monitor = Target_Monitor(tracker=anomaly_tracker)
@@ -61,7 +66,6 @@ def main():
         sys.exit(1)
 
     # Initialize transmitter if not skipped
-    transmitter = None
     if not args.skip_transmitter:
         try:
             from transmitter.transmitter import Transmitter
@@ -71,12 +75,13 @@ def main():
             print("Transmitter started")
         except Exception as e:
             print(f"Warning: Could not start transmitter: {e}")
+            transmitter = None
             cleanup_threads(monitor, transmitter, correlator)
             sys.exit(1)
 
     # Create correlator thread and start it
     try:
-        correlator = Correlator(p_tracker=packet_tracker, a_tracker=anomaly_tracker, 
+        correlator = Correlator(p_tracker=packet_tracker, a_tracker=anomaly_tracker,
                                 logdir=config['LOGGING']['Outdir'])
         correlator.start()
         print("Correlator started")

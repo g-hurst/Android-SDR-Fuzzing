@@ -278,7 +278,7 @@ class Correlator(threading.Thread):
         self.match_window = window
         self.anomaly_ctr = 0
         self.daemon = True
-        if logdir == None:
+        if logdir is None:
             raise Exception("Must provide directory")
         if not os.path.exists(logdir):
             os.makedirs(logdir)
