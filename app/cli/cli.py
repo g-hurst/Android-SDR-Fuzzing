@@ -300,6 +300,8 @@ class CLI(cmd.Cmd):
                                 print("\nDevice IP: Unknown")
                         except Exception:
                             print("\nDevice IP: Could not retrieve (timeout)")
+                        except KeyboardInterrupt as e:
+                            raise e
                     else:
                         print("\nDevice: Not connected")
 
