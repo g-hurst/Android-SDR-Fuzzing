@@ -7,6 +7,7 @@ with focus on Android device interaction for WiFi testing.
 """
 
 import cmd
+import time
 
 
 class CLI(cmd.Cmd):
@@ -36,6 +37,9 @@ class CLI(cmd.Cmd):
         self.target_monitor = target_monitor
         self.packet_tracker = packet_tracker
         self.anomaly_tracker = anomaly_tracker
+        
+        # Cache for device information to avoid repeated ADB calls
+        self._device_cache = {}
 
     # Override cmdloop to catch KeyboardInterrupt completely
     def cmdloop(self, intro=None):
@@ -72,6 +76,41 @@ class CLI(cmd.Cmd):
             return input(self.prompt)
         except EOFError:
             return 'EOF'
+    
+    def _safe_adb_exec(self, cmd, default="", use_cache=False, cache_key=None):
+        """
+        Execute ADB command with error handling and optional caching.
+        
+        Args:
+            cmd: ADB command to execute
+            default: Default value to return if command fails
+            use_cache: Whether to use cache for this command
+            cache_key: Key to use for caching (defaults to cmd)
+            
+        Returns:
+            Command result or default value if command fails
+        """
+        if not self.target_monitor or not hasattr(self.target_monitor, 'executor'):
+            return default
+            
+        # Check cache if enabled
+        if use_cache and cache_key in self._device_cache:
+            return self._device_cache[cache_key]
+            
+        # Try to execute command
+        try:
+            result = self.target_monitor.executor.adb_exec(cmd)
+            
+            # Cache result if enabled
+            if use_cache and result:
+                self._device_cache[cache_key or cmd] = result
+                
+            return result
+        except Exception as e:
+            # Only print error for non-cached commands to avoid spamming
+            if not use_cache:
+                print(f"Error executing ADB command '{cmd}': {e}")
+            return default
 
     # ===== Android Device Commands =====
     def do_adb(self, arg):
@@ -86,6 +125,7 @@ class CLI(cmd.Cmd):
         if not arg:
             print("Error: ADB command required")
             return
+            
         # Check if we can use the Target_Monitor (preferred)
         if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
             try:
@@ -93,7 +133,7 @@ class CLI(cmd.Cmd):
                 args = arg.split()
                 # If it's an adb shell command, pass everything after "shell" to executor
                 if args[0] == "shell" and len(args) > 1:
-                    result = self.target_monitor.executor.adb_exec(" ".join(args[1:]))
+                    result = self._safe_adb_exec(" ".join(args[1:]))
                     print(result)
                 else:
                     # For non-shell commands, try to execute but might not be supported
@@ -110,7 +150,7 @@ class CLI(cmd.Cmd):
         """Execute ADB command using Target Monitor."""
         try:
             if self.target_monitor and hasattr(self.target_monitor, 'executor'):
-                stdout = self.target_monitor.executor.adb_exec(arg)
+                stdout = self._safe_adb_exec(arg)
                 print(stdout)
             else:
                 print("Error: Target Monitor not available")
@@ -123,10 +163,21 @@ class CLI(cmd.Cmd):
         Usage: get_ip
         """
         if self.target_monitor:
-            ip_address = self.target_monitor.get_device_ip()
-            if ip_address:
-                print(f"Device IP address: {ip_address}")
-            else:
+            # Try to get cached IP first
+            if 'device_ip' in self._device_cache:
+                print(f"Device IP address: {self._device_cache['device_ip']}")
+                return
+                
+            try:
+                ip_address = self.target_monitor.get_device_ip()
+                if ip_address:
+                    # Cache the IP address
+                    self._device_cache['device_ip'] = ip_address
+                    print(f"Device IP address: {ip_address}")
+                else:
+                    print("Could not retrieve device IP address")
+            except Exception as e:
+                print(f"Error retrieving device IP: {e}")
                 print("Could not retrieve device IP address")
         else:
             print("Error: Target Monitor not available")
@@ -141,19 +192,27 @@ class CLI(cmd.Cmd):
             return
 
         try:
-            # Get device IP information
-            device_ip = self.target_monitor.get_device_ip()
+            # Get device IP information (try cached value first)
+            device_ip = self._device_cache.get('device_ip')
+            if not device_ip:
+                try:
+                    device_ip = self.target_monitor.get_device_ip()
+                    if device_ip:
+                        self._device_cache['device_ip'] = device_ip
+                except Exception:
+                    pass
+                    
             if not device_ip:
                 print("Error: Could not retrieve device IP address")
                 return
 
             # Get subnet mask
             netmask_cmd = "ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d/ -f2"
-            subnet_bits = self.target_monitor.executor.adb_exec(netmask_cmd).strip()
+            subnet_bits = self._safe_adb_exec(netmask_cmd, "").strip()
 
             # Get gateway information
             gateway_cmd = "ip route | grep default | awk '{print $3}'"
-            gateway = self.target_monitor.executor.adb_exec(gateway_cmd).strip()
+            gateway = self._safe_adb_exec(gateway_cmd, "").strip()
 
             # Display network information
             print("\n===== Network Configuration =====")
@@ -163,25 +222,31 @@ class CLI(cmd.Cmd):
             print(f"Default Gateway: {gateway}")
 
             # Check connectivity to gateway
-            ping_cmd = f"ping -c 1 -W 2 {gateway}"
-            ping_result = self.target_monitor.executor.adb_exec(ping_cmd)
+            if gateway:
+                ping_cmd = f"ping -c 1 -W 2 {gateway}"
+                ping_result = self._safe_adb_exec(ping_cmd, "")
 
-            if "1 received" in ping_result:
-                print("Gateway Connectivity: SUCCESS")
-                print("Device and router appear to be on the same network.")
+                if "1 received" in ping_result:
+                    print("Gateway Connectivity: SUCCESS")
+                    print("Device and router appear to be on the same network.")
+                else:
+                    print("Gateway Connectivity: FAILED")
+                    print("Device and router may not be on the same network.")
             else:
-                print("Gateway Connectivity: FAILED")
-                print("Device and router may not be on the same network.")
+                print("Gateway information not available")
 
             # Get network interface status
             interface_cmd = "ip addr show wlan0"
-            interface_status = self.target_monitor.executor.adb_exec(interface_cmd)
+            interface_status = self._safe_adb_exec(interface_cmd, "")
 
-            print("\n----- Network Interface Status -----")
-            for line in interface_status.splitlines():
-                line = line.strip()
-                if any(x in line for x in ["state UP", "inet ", "link/ether"]):
-                    print(line)
+            if interface_status:
+                print("\n----- Network Interface Status -----")
+                for line in interface_status.splitlines():
+                    line = line.strip()
+                    if any(x in line for x in ["state UP", "inet ", "link/ether"]):
+                        print(line)
+            else:
+                print("\nNetwork interface information not available")
         except Exception as e:
             print(f"Error checking network configuration: {e}")
 
@@ -269,10 +334,12 @@ class CLI(cmd.Cmd):
         signal.signal(signal.SIGINT, handle_interrupt)
 
         # Cache device IP to prevent repeated lookups that might timeout
-        cached_device_ip = None
-        if self.target_monitor:
+        cached_device_ip = self._device_cache.get('device_ip')
+        if not cached_device_ip and self.target_monitor:
             try:
                 cached_device_ip = self.target_monitor.get_device_ip()
+                if cached_device_ip:
+                    self._device_cache['device_ip'] = cached_device_ip
             except Exception:
                 pass
 
@@ -295,6 +362,7 @@ class CLI(cmd.Cmd):
                             device_ip = self.target_monitor.get_device_ip()
                             if device_ip:
                                 cached_device_ip = device_ip  # Update cache if successful
+                                self._device_cache['device_ip'] = device_ip
                                 print(f"\nDevice IP: {device_ip}")
                             else:
                                 print("\nDevice IP: Unknown")
@@ -389,7 +457,7 @@ class CLI(cmd.Cmd):
         """Show current device logs."""
         if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
             try:
-                logs = self.target_monitor.executor.adb_exec("logcat -d")
+                logs = self._safe_adb_exec("logcat -d", "No logs available")
                 print(logs)
             except Exception as e:
                 print(f"Error getting logs through Target_Monitor: {e}")
@@ -401,7 +469,7 @@ class CLI(cmd.Cmd):
         """Clear the log buffer."""
         if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
             try:
-                self.target_monitor.executor.adb_exec("logcat -c")
+                self._safe_adb_exec("logcat -c", "")
                 print("Log buffer cleared")
             except Exception as e:
                 print(f"Error clearing logs through Target_Monitor: {e}")
@@ -413,7 +481,7 @@ class CLI(cmd.Cmd):
         """Filter logs by tag."""
         if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
             try:
-                logs = self.target_monitor.executor.adb_exec(f"logcat -d *:{tag}")
+                logs = self._safe_adb_exec(f"logcat -d *:{tag}", "No logs available for filter")
                 print(logs)
             except Exception as e:
                 print(f"Error filtering logs through Target_Monitor: {e}")
@@ -428,26 +496,52 @@ class CLI(cmd.Cmd):
         """
         if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
             try:
-                # Get basic device information
-                manufacturer = self.target_monitor.executor.adb_exec("getprop ro.product.manufacturer").strip()
-                model = self.target_monitor.executor.adb_exec("getprop ro.product.model").strip()
-                version = self.target_monitor.executor.adb_exec("getprop ro.build.version.release").strip()
-                sdk = self.target_monitor.executor.adb_exec("getprop ro.build.version.sdk").strip()
-                # Display battery info
-                battery = self.target_monitor.executor.adb_exec("dumpsys battery")
+                # Get basic device information with caching
+                manufacturer = self._safe_adb_exec(
+                    "getprop ro.product.manufacturer", "Unknown", 
+                    use_cache=True, cache_key="manufacturer").strip()
+                    
+                model = self._safe_adb_exec(
+                    "getprop ro.product.model", "Unknown", 
+                    use_cache=True, cache_key="model").strip()
+                    
+                version = self._safe_adb_exec(
+                    "getprop ro.build.version.release", "Unknown", 
+                    use_cache=True, cache_key="version").strip()
+                    
+                sdk = self._safe_adb_exec(
+                    "getprop ro.build.version.sdk", "Unknown", 
+                    use_cache=True, cache_key="sdk").strip()
+                
+                # Display basic info
                 print("\n===== Android Device Information =====")
                 print(f"Manufacturer: {manufacturer}")
                 print(f"Model: {model}")
                 print(f"Android Version: {version} (SDK {sdk})")
-                print("\n----- Battery Information -----")
-                for line in battery.splitlines():
-                    if any(x in line for x in ["level", "scale", "status", "health", "present", "powered"]):
-                        print(line.strip())
+                
+                # Try to get battery info (don't cache this)
+                try:
+                    battery = self._safe_adb_exec("dumpsys battery", "")
+                    if battery:
+                        print("\n----- Battery Information -----")
+                        battery_info_found = False
+                        for line in battery.splitlines():
+                            if any(x in line for x in ["level", "scale", "status", "health", "present", "powered"]):
+                                print(line.strip())
+                                battery_info_found = True
+                        
+                        if not battery_info_found:
+                            print("No battery information available")
+                    else:
+                        print("\nBattery information not available")
+                except Exception:
+                    print("\nBattery information not available")
+                    
             except Exception as e:
-                print(f"Error getting device info through Target_Monitor: {e}")
-                self._execute_adb_subprocess("devices -l")
+                print(f"Error getting device info: {e}")
+                print("Could not retrieve complete device information")
         else:
-            self._execute_adb_subprocess("devices -l")
+            print("Error: Target Monitor not available")
 
     def do_wifi_info(self, arg):
         """
@@ -457,12 +551,21 @@ class CLI(cmd.Cmd):
         if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
             try:
                 # Get WiFi information
-                wifi_info = self.target_monitor.executor.adb_exec("dumpsys wifi")
+                wifi_info = self._safe_adb_exec("dumpsys wifi", "No WiFi information available")
+                if not wifi_info or wifi_info == "No WiFi information available":
+                    print("Could not retrieve WiFi information")
+                    return
+                    
                 # Extract and display key WiFi information
                 print("\n===== WiFi Information =====")
+                wifi_info_found = False
                 for line in wifi_info.splitlines():
                     if any(x in line for x in ["SSID", "BSSID", "RSSI", "state=", "IP", "Supplicant", "freq", "scan"]):
                         print(line.strip())
+                        wifi_info_found = True
+                        
+                if not wifi_info_found:
+                    print("No WiFi connection details found")
             except Exception as e:
                 print(f"Error getting WiFi info: {e}")
         else:
@@ -477,12 +580,19 @@ class CLI(cmd.Cmd):
             try:
                 # Get network statistics
                 print("\n===== Network Status =====")
-                netstats = self.target_monitor.executor.adb_exec("dumpsys netstats | grep -A 5 wifi").strip()
-                print(netstats)
+                netstats = self._safe_adb_exec("dumpsys netstats | grep -A 5 wifi", "No network statistics available").strip()
+                if netstats and netstats != "No network statistics available":
+                    print(netstats)
+                else:
+                    print("Network statistics not available")
+                
                 # Get current connectivity
-                connectivity = self.target_monitor.executor.adb_exec("dumpsys connectivity | grep -A 5 'NetworkAgentInfo'").strip()
-                print("\n----- Current Connectivity -----")
-                print(connectivity)
+                connectivity = self._safe_adb_exec("dumpsys connectivity | grep -A 5 'NetworkAgentInfo'", "No connectivity information available").strip()
+                if connectivity and connectivity != "No connectivity information available":
+                    print("\n----- Current Connectivity -----")
+                    print(connectivity)
+                else:
+                    print("\nConnectivity information not available")
             except Exception as e:
                 print(f"Error getting network status: {e}")
         else:
