@@ -348,7 +348,7 @@ class CLI(cmd.Cmd):
                     # Skip network connection status check - was causing timeouts
                     # Show helper message
                     print("\nPress Ctrl+C to stop monitoring and return to CLI")
-                    
+
                     # Always sleep for refresh interval
                     time.sleep(refresh)
 
