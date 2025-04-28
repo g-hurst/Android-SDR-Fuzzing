@@ -268,6 +268,14 @@ class CLI(cmd.Cmd):
         original_handler = signal.getsignal(signal.SIGINT)
         signal.signal(signal.SIGINT, handle_interrupt)
 
+        # Cache device IP to prevent repeated lookups that might timeout
+        cached_device_ip = None
+        if self.target_monitor:
+            try:
+                cached_device_ip = self.target_monitor.get_device_ip()
+            except Exception:
+                pass
+
         try:
             while running:
                 try:
@@ -278,10 +286,20 @@ class CLI(cmd.Cmd):
                     print("\n===== WiFi Fuzzing Platform Status Monitor =====")
                     print(f"Time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-                    # Device information
-                    if self.target_monitor:
-                        device_ip = self.target_monitor.get_device_ip()
-                        print(f"\nDevice IP: {device_ip if device_ip else 'Unknown'}")
+                    # Device information - use cached IP when possible
+                    if cached_device_ip:
+                        print(f"\nDevice IP: {cached_device_ip}")
+                    elif self.target_monitor:
+                        # Try to get IP but don't cause errors if it fails
+                        try:
+                            device_ip = self.target_monitor.get_device_ip()
+                            if device_ip:
+                                cached_device_ip = device_ip  # Update cache if successful
+                                print(f"\nDevice IP: {device_ip}")
+                            else:
+                                print("\nDevice IP: Unknown")
+                        except Exception:
+                            print("\nDevice IP: Could not retrieve (timeout)")
                     else:
                         print("\nDevice: Not connected")
 
@@ -314,34 +332,22 @@ class CLI(cmd.Cmd):
                         anomalies = list(self.anomaly_tracker)
                         anomaly_count = len(anomalies)
                         print("\n----- Anomalies Detected -----")
-                        print(f"Total Anomalies: {anomaly_count}")
-                        # Recent anomalies (if any)
                         if anomaly_count > 0:
+                            print(f"Total Anomalies: {anomaly_count}")
                             print("\nRecent Anomalies:")
                             for timestamp, anomaly_type, description in anomalies[-min(3, anomaly_count):]:
                                 print(f"  {timestamp.strftime('%H:%M:%S')}: {anomaly_type} - {description[:50]}...")
+                        else:
+                            print("No recent anomalies detected")
                     else:
                         print("\n----- Anomalies Detected -----")
                         print("Anomaly tracking not available")
-                    # Show network connection status
-                    if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
-                        try:
-                            gateway_cmd = "ip route | grep default | awk '{print $3}'"
-                            gateway = self.target_monitor.executor.adb_exec(gateway_cmd).strip()
-                            if gateway:
-                                ping_cmd = f"ping -c 1 -W 1 {gateway}"
-                                ping_result = self.target_monitor.executor.adb_exec(ping_cmd)
-                                print("\n----- Network Status -----")
-                                if "1 received" in ping_result:
-                                    print("Gateway Connection: UP")
-                                else:
-                                    print("Gateway Connection: DOWN")
-                        except Exception:
-                            pass
+
+                    # Skip network connection status check - was causing timeouts
                     # Show helper message
                     print("\nPress Ctrl+C to stop monitoring and return to CLI")
-
-                    # Always sleep for refresh interval - this is the key change
+                    
+                    # Always sleep for refresh interval
                     time.sleep(refresh)
 
                 except KeyboardInterrupt:
@@ -350,8 +356,8 @@ class CLI(cmd.Cmd):
                     break
                 except Exception as e:
                     print(f"Error in monitor: {e}")
-                    running = False
-                    break
+                    # Don't exit on errors, just continue to next refresh
+                    time.sleep(1)
 
         finally:
             # Restore original signal handler
