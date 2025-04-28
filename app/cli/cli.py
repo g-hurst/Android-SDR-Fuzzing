@@ -368,6 +368,8 @@ class CLI(cmd.Cmd):
                                 print("\nDevice IP: Unknown")
                         except Exception:
                             print("\nDevice IP: Could not retrieve (timeout)")
+                        except KeyboardInterrupt as e:
+                            raise e
                     else:
                         print("\nDevice: Not connected")
 
@@ -414,7 +416,7 @@ class CLI(cmd.Cmd):
                     # Skip network connection status check - was causing timeouts
                     # Show helper message
                     print("\nPress Ctrl+C to stop monitoring and return to CLI")
-                    
+
                     # Always sleep for refresh interval
                     time.sleep(refresh)
 
