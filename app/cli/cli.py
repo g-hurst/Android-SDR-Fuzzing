@@ -77,7 +77,7 @@ class CLI(cmd.Cmd):
         except EOFError:
             return 'EOF'
     
-    def _safe_adb_exec(self, cmd, default="", use_cache=False, cache_key=None):
+    def _safe_adb_exec(self, cmd, default="", use_cache=False, cache_key=None, timeout_s=3.0):
         """
         Execute ADB command with error handling and optional caching.
         
@@ -86,11 +86,16 @@ class CLI(cmd.Cmd):
             default: Default value to return if command fails
             use_cache: Whether to use cache for this command
             cache_key: Key to use for caching (defaults to cmd)
+            timeout_s: Timeout in seconds for command execution
             
         Returns:
             Command result or default value if command fails
         """
         if not self.target_monitor or not hasattr(self.target_monitor, 'executor'):
+            return default
+            
+        # Skip if monitor is shutting down
+        if hasattr(self.target_monitor, '_is_shutting_down') and self.target_monitor._is_shutting_down:
             return default
             
         # Check cache if enabled
@@ -99,7 +104,7 @@ class CLI(cmd.Cmd):
             
         # Try to execute command
         try:
-            result = self.target_monitor.executor.adb_exec(cmd)
+            result = self.target_monitor.executor.adb_exec(cmd, timeout_s=timeout_s)
             
             # Cache result if enabled
             if use_cache and result:
@@ -127,7 +132,9 @@ class CLI(cmd.Cmd):
             return
             
         # Check if we can use the Target_Monitor (preferred)
-        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+        if (self.target_monitor and hasattr(self.target_monitor, 'executor') and 
+                self.target_monitor.executor and 
+                not getattr(self.target_monitor, '_is_shutting_down', False)):
             try:
                 # Split the command to handle "adb shell" vs other commands
                 args = arg.split()
@@ -149,7 +156,8 @@ class CLI(cmd.Cmd):
     def _execute_adb_subprocess(self, arg):
         """Execute ADB command using Target Monitor."""
         try:
-            if self.target_monitor and hasattr(self.target_monitor, 'executor'):
+            if (self.target_monitor and hasattr(self.target_monitor, 'executor') and 
+                    not getattr(self.target_monitor, '_is_shutting_down', False)):
                 stdout = self._safe_adb_exec(arg)
                 print(stdout)
             else:
@@ -162,32 +170,35 @@ class CLI(cmd.Cmd):
         Display the IP address of the connected Android device.
         Usage: get_ip
         """
-        if self.target_monitor:
-            # Try to get cached IP first
-            if 'device_ip' in self._device_cache:
-                print(f"Device IP address: {self._device_cache['device_ip']}")
-                return
-                
-            try:
-                ip_address = self.target_monitor.get_device_ip()
-                if ip_address:
-                    # Cache the IP address
-                    self._device_cache['device_ip'] = ip_address
-                    print(f"Device IP address: {ip_address}")
-                else:
-                    print("Could not retrieve device IP address")
-            except Exception as e:
-                print(f"Error retrieving device IP: {e}")
-                print("Could not retrieve device IP address")
-        else:
+        if not self.target_monitor or getattr(self.target_monitor, '_is_shutting_down', False):
             print("Error: Target Monitor not available")
+            return
+            
+        # Try to get cached IP first
+        if 'device_ip' in self._device_cache:
+            print(f"Device IP address: {self._device_cache['device_ip']}")
+            return
+            
+        try:
+            ip_address = self.target_monitor.get_device_ip()
+            if ip_address:
+                # Cache the IP address
+                self._device_cache['device_ip'] = ip_address
+                print(f"Device IP address: {ip_address}")
+            else:
+                print("Could not retrieve device IP address")
+        except Exception as e:
+            print(f"Error retrieving device IP: {e}")
+            print("Could not retrieve device IP address")
 
     def do_check_network(self, arg):
         """
         Check if the target device and router are on the same network.
         Usage: check_network
         """
-        if not self.target_monitor or not hasattr(self.target_monitor, 'executor') or not self.target_monitor.executor:
+        if (not self.target_monitor or not hasattr(self.target_monitor, 'executor') or 
+                not self.target_monitor.executor or 
+                getattr(self.target_monitor, '_is_shutting_down', False)):
             print("Error: Target Monitor not available")
             return
 
@@ -317,9 +328,11 @@ class CLI(cmd.Cmd):
         # Parse refresh interval
         try:
             refresh = int(arg) if arg else 5  # Default to 5 seconds if no value provided
+            # Ensure reasonable limits
+            refresh = max(1, min(refresh, 60))  # Between 1 and 60 seconds
         except ValueError:
-            print("Error: Invalid refresh interval. Please enter a number in seconds.")
-            return
+            print("Error: Invalid refresh interval. Using default of 5 seconds.")
+            refresh = 5
 
         # Prepare for continuous monitoring with refresh
         running = True
@@ -335,7 +348,7 @@ class CLI(cmd.Cmd):
 
         # Cache device IP to prevent repeated lookups that might timeout
         cached_device_ip = self._device_cache.get('device_ip')
-        if not cached_device_ip and self.target_monitor:
+        if not cached_device_ip and self.target_monitor and not getattr(self.target_monitor, '_is_shutting_down', False):
             try:
                 cached_device_ip = self.target_monitor.get_device_ip()
                 if cached_device_ip:
@@ -343,6 +356,10 @@ class CLI(cmd.Cmd):
             except Exception:
                 pass
 
+        # Track consecutive errors
+        last_error_time = 0
+        consecutive_errors = 0
+                
         try:
             while running:
                 try:
@@ -353,10 +370,16 @@ class CLI(cmd.Cmd):
                     print("\n===== WiFi Fuzzing Platform Status Monitor =====")
                     print(f"Time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
+                    # Check if monitor is shutting down
+                    if self.target_monitor and getattr(self.target_monitor, '_is_shutting_down', False):
+                        print("\nTarget monitor is shutting down. Stopping display...")
+                        running = False
+                        break
+
                     # Device information - use cached IP when possible
                     if cached_device_ip:
                         print(f"\nDevice IP: {cached_device_ip}")
-                    elif self.target_monitor:
+                    elif self.target_monitor and not getattr(self.target_monitor, '_is_shutting_down', False):
                         # Try to get IP but don't cause errors if it fails
                         try:
                             device_ip = self.target_monitor.get_device_ip()
@@ -375,40 +398,51 @@ class CLI(cmd.Cmd):
 
                     # Packet statistics
                     if self.packet_tracker:
-                        packets = list(self.packet_tracker)
-                        packet_count = len(packets)
-                        # Calculate packet rate from recent packets
-                        recent_rate = 0
-                        if packet_count >= 2:
-                            # Use last 10 packets or all if fewer
-                            recent_packets = packets[-min(10, packet_count):]
-                            start_time = recent_packets[0][0]
-                            end_time = recent_packets[-1][0]
-                            time_diff = (end_time - start_time).total_seconds()
-                            recent_rate = len(recent_packets) / time_diff if time_diff > 0 else 0
-                        print("\n----- Packet Statistics -----")
-                        print(f"Total Packets Sent: {packet_count}")
-                        print(f"Recent Rate: {recent_rate:.2f} packets/second")
-                        # Show most recent packet
-                        if packet_count > 0:
-                            _, packet_num, packet_hex = packets[-1]
-                            print(f"Last Packet: #{packet_num} - {packet_hex[:50]}...")
+                        try:
+                            packets = list(self.packet_tracker)
+                            packet_count = len(packets)
+                            
+                            # Calculate packet rate from recent packets
+                            recent_rate = 0
+                            if packet_count >= 2:
+                                # Use last 10 packets or all if fewer
+                                recent_packets = packets[-min(10, packet_count):]
+                                start_time = recent_packets[0][0]
+                                end_time = recent_packets[-1][0]
+                                time_diff = (end_time - start_time).total_seconds()
+                                recent_rate = len(recent_packets) / time_diff if time_diff > 0 else 0
+                                
+                            print("\n----- Packet Statistics -----")
+                            print(f"Total Packets Sent: {packet_count}")
+                            print(f"Recent Rate: {recent_rate:.2f} packets/second")
+                            
+                            # Show most recent packet
+                            if packet_count > 0:
+                                _, packet_num, packet_hex = packets[-1]
+                                print(f"Last Packet: #{packet_num} - {packet_hex[:50]}...")
+                        except Exception as e:
+                            print("\n----- Packet Statistics -----")
+                            print(f"Error processing packet data: {e}")
                     else:
                         print("\n----- Packet Statistics -----")
                         print("Packet tracking not available")
 
                     # Anomaly information
                     if self.anomaly_tracker:
-                        anomalies = list(self.anomaly_tracker)
-                        anomaly_count = len(anomalies)
-                        print("\n----- Anomalies Detected -----")
-                        if anomaly_count > 0:
-                            print(f"Total Anomalies: {anomaly_count}")
-                            print("\nRecent Anomalies:")
-                            for timestamp, anomaly_type, description in anomalies[-min(3, anomaly_count):]:
-                                print(f"  {timestamp.strftime('%H:%M:%S')}: {anomaly_type} - {description[:50]}...")
-                        else:
-                            print("No recent anomalies detected")
+                        try:
+                            anomalies = list(self.anomaly_tracker)
+                            anomaly_count = len(anomalies)
+                            print("\n----- Anomalies Detected -----")
+                            if anomaly_count > 0:
+                                print(f"Total Anomalies: {anomaly_count}")
+                                print("\nRecent Anomalies:")
+                                for timestamp, anomaly_type, description in anomalies[-min(3, anomaly_count):]:
+                                    print(f"  {timestamp.strftime('%H:%M:%S')}: {anomaly_type} - {description[:50]}...")
+                            else:
+                                print("No recent anomalies detected")
+                        except Exception as e:
+                            print("\n----- Anomalies Detected -----")
+                            print(f"Error processing anomaly data: {e}")
                     else:
                         print("\n----- Anomalies Detected -----")
                         print("Anomaly tracking not available")
@@ -417,6 +451,9 @@ class CLI(cmd.Cmd):
                     # Show helper message
                     print("\nPress Ctrl+C to stop monitoring and return to CLI")
 
+                    # Reset error counter on successful update
+                    consecutive_errors = 0
+                    
                     # Always sleep for refresh interval
                     time.sleep(refresh)
 
@@ -425,7 +462,23 @@ class CLI(cmd.Cmd):
                     print("\nStopping monitor...")
                     break
                 except Exception as e:
+                    # Track increasing errors
+                    current_time = time.time()
+                    if current_time - last_error_time < 2:
+                        consecutive_errors += 1
+                    else:
+                        consecutive_errors = 1
+                    
+                    last_error_time = current_time
+                    
                     print(f"Error in monitor: {e}")
+                    
+                    # Exit if too many consecutive errors
+                    if consecutive_errors >= 5:
+                        print("Too many consecutive errors, stopping monitor...")
+                        running = False
+                        break
+                    
                     # Don't exit on errors, just continue to next refresh
                     time.sleep(1)
 
@@ -457,9 +510,11 @@ class CLI(cmd.Cmd):
 
     def _show_logs(self):
         """Show current device logs."""
-        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+        if (self.target_monitor and hasattr(self.target_monitor, 'executor') and 
+                self.target_monitor.executor and 
+                not getattr(self.target_monitor, '_is_shutting_down', False)):
             try:
-                logs = self._safe_adb_exec("logcat -d", "No logs available")
+                logs = self._safe_adb_exec("logcat -d", "No logs available", timeout_s=3.0)
                 print(logs)
             except Exception as e:
                 print(f"Error getting logs through Target_Monitor: {e}")
@@ -469,9 +524,11 @@ class CLI(cmd.Cmd):
 
     def _clear_logs(self):
         """Clear the log buffer."""
-        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+        if (self.target_monitor and hasattr(self.target_monitor, 'executor') and 
+                self.target_monitor.executor and 
+                not getattr(self.target_monitor, '_is_shutting_down', False)):
             try:
-                self._safe_adb_exec("logcat -c", "")
+                self._safe_adb_exec("logcat -c", "", timeout_s=2.0)
                 print("Log buffer cleared")
             except Exception as e:
                 print(f"Error clearing logs through Target_Monitor: {e}")
@@ -481,9 +538,11 @@ class CLI(cmd.Cmd):
 
     def _filter_logs(self, tag):
         """Filter logs by tag."""
-        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+        if (self.target_monitor and hasattr(self.target_monitor, 'executor') and 
+                self.target_monitor.executor and 
+                not getattr(self.target_monitor, '_is_shutting_down', False)):
             try:
-                logs = self._safe_adb_exec(f"logcat -d *:{tag}", "No logs available for filter")
+                logs = self._safe_adb_exec(f"logcat -d *:{tag}", "No logs available for filter", timeout_s=3.0)
                 print(logs)
             except Exception as e:
                 print(f"Error filtering logs through Target_Monitor: {e}")
@@ -496,7 +555,9 @@ class CLI(cmd.Cmd):
         Display information about the connected Android device.
         Usage: device_info
         """
-        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+        if (self.target_monitor and hasattr(self.target_monitor, 'executor') and 
+                self.target_monitor.executor and 
+                not getattr(self.target_monitor, '_is_shutting_down', False)):
             try:
                 # Get basic device information with caching
                 manufacturer = self._safe_adb_exec(
@@ -523,7 +584,7 @@ class CLI(cmd.Cmd):
                 
                 # Try to get battery info (don't cache this)
                 try:
-                    battery = self._safe_adb_exec("dumpsys battery", "")
+                    battery = self._safe_adb_exec("dumpsys battery", "", timeout_s=2.0)
                     if battery:
                         print("\n----- Battery Information -----")
                         battery_info_found = False
@@ -550,10 +611,12 @@ class CLI(cmd.Cmd):
         Display WiFi information from the connected Android device.
         Usage: wifi_info
         """
-        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+        if (self.target_monitor and hasattr(self.target_monitor, 'executor') and 
+                self.target_monitor.executor and 
+                not getattr(self.target_monitor, '_is_shutting_down', False)):
             try:
                 # Get WiFi information
-                wifi_info = self._safe_adb_exec("dumpsys wifi", "No WiFi information available")
+                wifi_info = self._safe_adb_exec("dumpsys wifi", "No WiFi information available", timeout_s=3.0)
                 if not wifi_info or wifi_info == "No WiFi information available":
                     print("Could not retrieve WiFi information")
                     return
@@ -578,18 +641,20 @@ class CLI(cmd.Cmd):
         Display network status information from the connected Android device.
         Usage: network_status
         """
-        if self.target_monitor and hasattr(self.target_monitor, 'executor') and self.target_monitor.executor:
+        if (self.target_monitor and hasattr(self.target_monitor, 'executor') and 
+                self.target_monitor.executor and 
+                not getattr(self.target_monitor, '_is_shutting_down', False)):
             try:
                 # Get network statistics
                 print("\n===== Network Status =====")
-                netstats = self._safe_adb_exec("dumpsys netstats | grep -A 5 wifi", "No network statistics available").strip()
+                netstats = self._safe_adb_exec("dumpsys netstats | grep -A 5 wifi", "No network statistics available", timeout_s=3.0).strip()
                 if netstats and netstats != "No network statistics available":
                     print(netstats)
                 else:
                     print("Network statistics not available")
                 
                 # Get current connectivity
-                connectivity = self._safe_adb_exec("dumpsys connectivity | grep -A 5 'NetworkAgentInfo'", "No connectivity information available").strip()
+                connectivity = self._safe_adb_exec("dumpsys connectivity | grep -A 5 'NetworkAgentInfo'", "No connectivity information available", timeout_s=3.0).strip()
                 if connectivity and connectivity != "No connectivity information available":
                     print("\n----- Current Connectivity -----")
                     print(connectivity)

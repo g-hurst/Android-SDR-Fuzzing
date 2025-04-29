@@ -36,6 +36,9 @@ def parse_argv():
 
 def main():
     args = parse_argv()
+    
+    # Flag to prevent multiple shutdowns
+    shutdown_initiated = False
 
     # read the configuration file
     try:
@@ -43,10 +46,17 @@ def main():
         config.read(args.config)
     except Exception as e:
         print(f'error parsing config: {e}')
+        # Create empty config if parsing fails
+        config = configparser.ConfigParser()
 
-    # Initialize trackers
-    packet_tracker = deque()
-    anomaly_tracker = deque()
+    # Initialize trackers with size limits
+    packet_tracker = deque(maxlen=1000)
+    anomaly_tracker = deque(maxlen=500)
+
+    # Initialize components
+    monitor = None
+    transmitter = None
+    correlator = None
 
     # Create monitor thread and start it
     try:
@@ -58,16 +68,23 @@ def main():
         monitor = None
 
     # Initialize transmitter if not skipped
-    transmitter = None
     if not args.skip_transmitter:
         try:
             from transmitter.transmitter import Transmitter
+            # Use safe config access with fallback
+            interface = 'eth0'  # Default
+            try:
+                interface = config['TRANSMITTER']['NetDevice']
+            except (KeyError, TypeError):
+                print("Warning: Using default interface 'eth0'. Add to config.ini if needed.")
+                
             transmitter = Transmitter(tracker=packet_tracker,
-                                      interface=config['TRANSMITTER']['NetDevice'])
+                                      interface=interface)
             transmitter.start()
             print("Transmitter started")
         except Exception as e:
             print(f"Warning: Could not start transmitter: {e}")
+            transmitter = None
 
     # Create correlator thread and start it
     try:
@@ -82,6 +99,18 @@ def main():
     cli = CLI(target_monitor=monitor,
               packet_tracker=packet_tracker,
               anomaly_tracker=anomaly_tracker)
+              
+    # Define safe shutdown function
+    def shutdown_app():
+        nonlocal shutdown_initiated
+        if shutdown_initiated:
+            print("Shutdown already in progress...")
+            return
+        
+        shutdown_initiated = True
+        print("\nInitiating shutdown sequence...")
+        cleanup_threads(monitor, transmitter, correlator)
+        print('App complete')
 
     if args.interactive:
         # Run the interactive CLI
@@ -92,27 +121,22 @@ def main():
             print("\nReceived keyboard interrupt. Shutting down...")
         finally:
             # Cleanup threads
-            cleanup_threads(monitor, transmitter, correlator)
-            print('App complete')
+            shutdown_app()
             return
 
     # If not in interactive mode, just run the main loop
     print("Running in background mode. Press Ctrl+C to exit.")
 
     # Main loop
-    while True:
-        try:
+    try:
+        while not shutdown_initiated:
             time.sleep(0.1)
-        except KeyboardInterrupt:
-            print("\nReceived keyboard interrupt. Shutting down...")
-            break
-        except Exception as e:
-            print(f'Error in main loop: {e}')
-            break
-
-    # Cleanup threads
-    cleanup_threads(monitor, transmitter, correlator)
-    print('App complete')
+    except KeyboardInterrupt:
+        print("\nReceived keyboard interrupt. Shutting down...")
+    except Exception as e:
+        print(f'Error in main loop: {e}')
+    finally:
+        shutdown_app()
 
 
 def cleanup_threads(monitor, transmitter, correlator):
@@ -120,7 +144,10 @@ def cleanup_threads(monitor, transmitter, correlator):
     # Cleanup the monitor
     if monitor:
         try:
+            print("Stopping monitor thread...")
             monitor.kill()
+            # Give time for the monitor thread to clean up
+            time.sleep(0.5)
         except AttributeError:
             # Handle the case where device is None
             print("Note: Monitor device was not fully initialized")
@@ -130,14 +157,20 @@ def cleanup_threads(monitor, transmitter, correlator):
     # Cleanup the transmitter
     if transmitter:
         try:
+            print("Stopping transmitter thread...")
             transmitter.kill()
+            # Give thread time to clean up
+            time.sleep(0.2)
         except Exception as e:
             print(f"Warning: Error during transmitter cleanup: {e}")
 
     # Cleanup the correlator
     if correlator:
         try:
+            print("Stopping correlator thread...")
             correlator.kill()
+            # Give thread time to clean up
+            time.sleep(0.2)
         except Exception as e:
             print(f"Warning: Error during correlator cleanup: {e}")
 
