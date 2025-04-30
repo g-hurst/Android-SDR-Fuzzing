@@ -2,4 +2,4 @@
 __pycache__
 .android
 docs/_build
-app/*.log
+app/logs/*.log

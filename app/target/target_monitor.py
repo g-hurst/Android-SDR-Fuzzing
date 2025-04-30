@@ -270,7 +270,7 @@ class ADB_Executor():
 
 
 class Correlator(threading.Thread):
-    def __init__(self, p_tracker, a_tracker, window=2):
+    def __init__(self, p_tracker, a_tracker, logdir, window=2):
         super().__init__()
         self._stay_alive = threading.Event()
         self.packet_tracker = p_tracker
@@ -278,6 +278,11 @@ class Correlator(threading.Thread):
         self.match_window = window
         self.anomaly_ctr = 0
         self.daemon = True
+        if logdir is None:
+            raise Exception("Must provide directory")
+        if not os.path.exists(logdir):
+            os.makedirs(logdir)
+        os.chdir(logdir)
 
     def correlate_trackers(self):
         """

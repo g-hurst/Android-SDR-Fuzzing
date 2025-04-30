@@ -2,6 +2,7 @@
 import time
 import argparse
 import configparser
+import sys
 from collections import deque
 from target.target_monitor import Target_Monitor, Correlator
 from cli.cli import CLI
@@ -48,6 +49,11 @@ def main():
     packet_tracker = deque()
     anomaly_tracker = deque()
 
+    # Initialize thread objects
+    monitor = None
+    transmitter = None
+    correlator = None
+
     # Create monitor thread and start it
     try:
         monitor = Target_Monitor(tracker=anomaly_tracker)
@@ -56,9 +62,10 @@ def main():
     except Exception as e:
         print(f"Warning: Could not start monitor: {e}")
         monitor = None
+        cleanup_threads(monitor, transmitter, correlator)
+        sys.exit(1)
 
     # Initialize transmitter if not skipped
-    transmitter = None
     if not args.skip_transmitter:
         try:
             from transmitter.transmitter import Transmitter
@@ -68,15 +75,21 @@ def main():
             print("Transmitter started")
         except Exception as e:
             print(f"Warning: Could not start transmitter: {e}")
+            transmitter = None
+            cleanup_threads(monitor, transmitter, correlator)
+            sys.exit(1)
 
     # Create correlator thread and start it
     try:
-        correlator = Correlator(p_tracker=packet_tracker, a_tracker=anomaly_tracker)
+        correlator = Correlator(p_tracker=packet_tracker, a_tracker=anomaly_tracker,
+                                logdir=config['LOGGING']['Outdir'])
         correlator.start()
         print("Correlator started")
     except Exception as e:
         print(f"Warning: Could not start correlator: {e}")
         correlator = None
+        cleanup_threads(monitor, transmitter, correlator)
+        sys.exit(1)
 
     # Create CLI instance with references to monitor and trackers
     cli = CLI(target_monitor=monitor,
