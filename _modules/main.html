@@ -1,0 +1,270 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>main &mdash; Android Wifi Fuzzer  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Android Wifi Fuzzer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user_manual.html">WiFi Fuzzing Platform User Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../src_code.html">Source Code Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Android Wifi Fuzzer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">main</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for main</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">configparser</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">deque</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">target.target_monitor</span><span class="w"> </span><span class="kn">import</span> <span class="n">Target_Monitor</span><span class="p">,</span> <span class="n">Correlator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cli.cli</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLI</span>
+
+
+<div class="viewcode-block" id="parse_argv">
+<a class="viewcode-back" href="../main.html#main.parse_argv">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_argv</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This function is just a wrapper for the argparse setup for our cli tool.</span>
+<span class="sd">    All of the options for argparse should be added here.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Run the CLI application with optional modes.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="s2">&quot;--interactive&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Run the CLI in interactive mode&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--skip-transmitter&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Skip starting the transmitter&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-c&quot;</span><span class="p">,</span> <span class="s2">&quot;--config&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;FILE&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;config.ini&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the configuration file&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../main.html#main.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parse_argv</span><span class="p">()</span>
+
+    <span class="c1"># read the configuration file</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;error parsing config: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Initialize trackers</span>
+    <span class="n">packet_tracker</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
+    <span class="n">anomaly_tracker</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
+
+    <span class="c1"># Initialize thread objects</span>
+    <span class="n">monitor</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">transmitter</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">correlator</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Create monitor thread and start it</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">monitor</span> <span class="o">=</span> <span class="n">Target_Monitor</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="n">anomaly_tracker</span><span class="p">)</span>
+        <span class="n">monitor</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Target monitor started&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Could not start monitor: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">monitor</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">cleanup_threads</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">transmitter</span><span class="p">,</span> <span class="n">correlator</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Initialize transmitter if not skipped</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">skip_transmitter</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">transmitter.transmitter</span><span class="w"> </span><span class="kn">import</span> <span class="n">Transmitter</span>
+            <span class="n">transmitter</span> <span class="o">=</span> <span class="n">Transmitter</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="n">packet_tracker</span><span class="p">,</span>
+                                      <span class="n">interface</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;TRANSMITTER&#39;</span><span class="p">][</span><span class="s1">&#39;NetDevice&#39;</span><span class="p">])</span>
+            <span class="n">transmitter</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Transmitter started&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Could not start transmitter: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">transmitter</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">cleanup_threads</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">transmitter</span><span class="p">,</span> <span class="n">correlator</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Create correlator thread and start it</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">correlator</span> <span class="o">=</span> <span class="n">Correlator</span><span class="p">(</span><span class="n">p_tracker</span><span class="o">=</span><span class="n">packet_tracker</span><span class="p">,</span> <span class="n">a_tracker</span><span class="o">=</span><span class="n">anomaly_tracker</span><span class="p">,</span>
+                                <span class="n">logdir</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;LOGGING&#39;</span><span class="p">][</span><span class="s1">&#39;Outdir&#39;</span><span class="p">])</span>
+        <span class="n">correlator</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Correlator started&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Could not start correlator: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">correlator</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">cleanup_threads</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">transmitter</span><span class="p">,</span> <span class="n">correlator</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Create CLI instance with references to monitor and trackers</span>
+    <span class="n">cli</span> <span class="o">=</span> <span class="n">CLI</span><span class="p">(</span><span class="n">target_monitor</span><span class="o">=</span><span class="n">monitor</span><span class="p">,</span>
+              <span class="n">packet_tracker</span><span class="o">=</span><span class="n">packet_tracker</span><span class="p">,</span>
+              <span class="n">anomaly_tracker</span><span class="o">=</span><span class="n">anomaly_tracker</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">interactive</span><span class="p">:</span>
+        <span class="c1"># Run the interactive CLI</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting interactive CLI mode. Use Ctrl+D to exit.&quot;</span><span class="p">)</span>
+            <span class="n">cli</span><span class="o">.</span><span class="n">cmdloop</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Received keyboard interrupt. Shutting down...&quot;</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># Cleanup threads</span>
+            <span class="n">cleanup_threads</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">transmitter</span><span class="p">,</span> <span class="n">correlator</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;App complete&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+    <span class="c1"># If not in interactive mode, just run the main loop</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running in background mode. Press Ctrl+C to exit.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Main loop</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Received keyboard interrupt. Shutting down...&quot;</span><span class="p">)</span>
+            <span class="k">break</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Error in main loop: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">break</span>
+
+    <span class="c1"># Cleanup threads</span>
+    <span class="n">cleanup_threads</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">transmitter</span><span class="p">,</span> <span class="n">correlator</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;App complete&#39;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="cleanup_threads">
+<a class="viewcode-back" href="../main.html#main.cleanup_threads">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cleanup_threads</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">transmitter</span><span class="p">,</span> <span class="n">correlator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Safely cleanup all threads.&quot;&quot;&quot;</span>
+    <span class="c1"># Cleanup the monitor</span>
+    <span class="k">if</span> <span class="n">monitor</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">monitor</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="c1"># Handle the case where device is None</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Note: Monitor device was not fully initialized&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Error during monitor cleanup: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Cleanup the transmitter</span>
+    <span class="k">if</span> <span class="n">transmitter</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">transmitter</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Error during transmitter cleanup: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Cleanup the correlator</span>
+    <span class="k">if</span> <span class="n">correlator</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">correlator</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Error during correlator cleanup: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Garrett Hurst, Ron Bejerano, Shashwat Misra.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

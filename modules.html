@@ -1,0 +1,218 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>app &mdash; Android Wifi Fuzzer  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="cli package" href="cli.html" />
+    <link rel="prev" title="Source Code Documentation" href="src_code.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Android Wifi Fuzzer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="user_manual.html">WiFi Fuzzing Platform User Manual</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="src_code.html">Source Code Documentation</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">app</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli.html">cli package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="main.html">main module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="target.html">target package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="transmitter.html">transmitter package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Android Wifi Fuzzer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="src_code.html">Source Code Documentation</a></li>
+      <li class="breadcrumb-item active">app</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/modules.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="app">
+<h1>app<a class="headerlink" href="#app" title="Link to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">cli package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#module-cli.cli">cli.cli module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli.html#cli-module">CLI Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cli.html#cli.cli.CLI"><code class="docutils literal notranslate"><span class="pre">CLI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.cmdloop"><code class="docutils literal notranslate"><span class="pre">CLI.cmdloop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_EOF"><code class="docutils literal notranslate"><span class="pre">CLI.do_EOF()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_adb"><code class="docutils literal notranslate"><span class="pre">CLI.do_adb()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_check_network"><code class="docutils literal notranslate"><span class="pre">CLI.do_check_network()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_device_info"><code class="docutils literal notranslate"><span class="pre">CLI.do_device_info()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_exit"><code class="docutils literal notranslate"><span class="pre">CLI.do_exit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_get_ip"><code class="docutils literal notranslate"><span class="pre">CLI.do_get_ip()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_logs"><code class="docutils literal notranslate"><span class="pre">CLI.do_logs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_monitor"><code class="docutils literal notranslate"><span class="pre">CLI.do_monitor()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_network_status"><code class="docutils literal notranslate"><span class="pre">CLI.do_network_status()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_packet_stats"><code class="docutils literal notranslate"><span class="pre">CLI.do_packet_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_quit"><code class="docutils literal notranslate"><span class="pre">CLI.do_quit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.do_wifi_info"><code class="docutils literal notranslate"><span class="pre">CLI.do_wifi_info()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.get_input"><code class="docutils literal notranslate"><span class="pre">CLI.get_input()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.intro"><code class="docutils literal notranslate"><span class="pre">CLI.intro</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="cli.html#cli.cli.CLI.prompt"><code class="docutils literal notranslate"><span class="pre">CLI.prompt</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#module-cli">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main.html">main module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="main.html#main.cleanup_threads"><code class="docutils literal notranslate"><span class="pre">cleanup_threads()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html#main.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html#main.parse_argv"><code class="docutils literal notranslate"><span class="pre">parse_argv()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="target.html">target package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="target.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="target.html#module-target.target_monitor">target.target_monitor module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="target.html#target-monitor-module">Target Monitor Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="target.html#target.target_monitor.ADB_Executor"><code class="docutils literal notranslate"><span class="pre">ADB_Executor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.ADB_Executor.adb_exec"><code class="docutils literal notranslate"><span class="pre">ADB_Executor.adb_exec()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.ADB_Executor.command_stream"><code class="docutils literal notranslate"><span class="pre">ADB_Executor.command_stream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.ADB_Executor.get_phone_stats"><code class="docutils literal notranslate"><span class="pre">ADB_Executor.get_phone_stats()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="target.html#target.target_monitor.Correlator"><code class="docutils literal notranslate"><span class="pre">Correlator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.Correlator.correlate_trackers"><code class="docutils literal notranslate"><span class="pre">Correlator.correlate_trackers()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.Correlator.kill"><code class="docutils literal notranslate"><span class="pre">Correlator.kill()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.Correlator.run"><code class="docutils literal notranslate"><span class="pre">Correlator.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="target.html#target.target_monitor.Target_Monitor"><code class="docutils literal notranslate"><span class="pre">Target_Monitor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.Target_Monitor.adb_connect"><code class="docutils literal notranslate"><span class="pre">Target_Monitor.adb_connect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.Target_Monitor.get_adb_signer"><code class="docutils literal notranslate"><span class="pre">Target_Monitor.get_adb_signer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.Target_Monitor.get_device_ip"><code class="docutils literal notranslate"><span class="pre">Target_Monitor.get_device_ip()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.Target_Monitor.kill"><code class="docutils literal notranslate"><span class="pre">Target_Monitor.kill()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.Target_Monitor.run"><code class="docutils literal notranslate"><span class="pre">Target_Monitor.run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="target.html#target.target_monitor.Target_Monitor.track_errors"><code class="docutils literal notranslate"><span class="pre">Target_Monitor.track_errors()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="target.html#target-test-target-monitor-module">target.test_target_monitor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="target.html#module-target">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="transmitter.html">transmitter package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="transmitter.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transmitter.html#module-transmitter.transmitter">transmitter.transmitter module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter"><code class="docutils literal notranslate"><span class="pre">Transmitter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.build_packet"><code class="docutils literal notranslate"><span class="pre">Transmitter.build_packet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.clear_raw_override"><code class="docutils literal notranslate"><span class="pre">Transmitter.clear_raw_override()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.get_n_packets_sent"><code class="docutils literal notranslate"><span class="pre">Transmitter.get_n_packets_sent()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.get_packet_hex"><code class="docutils literal notranslate"><span class="pre">Transmitter.get_packet_hex()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.kill"><code class="docutils literal notranslate"><span class="pre">Transmitter.kill()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.modify_raw_bytes"><code class="docutils literal notranslate"><span class="pre">Transmitter.modify_raw_bytes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.mutate_packet"><code class="docutils literal notranslate"><span class="pre">Transmitter.mutate_packet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.print_packet"><code class="docutils literal notranslate"><span class="pre">Transmitter.print_packet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.reset_packet"><code class="docutils literal notranslate"><span class="pre">Transmitter.reset_packet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.run"><code class="docutils literal notranslate"><span class="pre">Transmitter.run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.send_frame"><code class="docutils literal notranslate"><span class="pre">Transmitter.send_frame()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.set_ether_field"><code class="docutils literal notranslate"><span class="pre">Transmitter.set_ether_field()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.set_ip_field"><code class="docutils literal notranslate"><span class="pre">Transmitter.set_ip_field()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.set_payload"><code class="docutils literal notranslate"><span class="pre">Transmitter.set_payload()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.set_target_ip"><code class="docutils literal notranslate"><span class="pre">Transmitter.set_target_ip()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.set_target_mac"><code class="docutils literal notranslate"><span class="pre">Transmitter.set_target_mac()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.set_transport_field"><code class="docutils literal notranslate"><span class="pre">Transmitter.set_transport_field()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="transmitter.html#transmitter.transmitter.Transmitter.track_packet"><code class="docutils literal notranslate"><span class="pre">Transmitter.track_packet()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="transmitter.html#module-transmitter">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="src_code.html" class="btn btn-neutral float-left" title="Source Code Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cli.html" class="btn btn-neutral float-right" title="cli package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Garrett Hurst, Ron Bejerano, Shashwat Misra.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

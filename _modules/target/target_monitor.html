@@ -1,0 +1,484 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>target.target_monitor &mdash; Android Wifi Fuzzer  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Android Wifi Fuzzer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user_manual.html">WiFi Fuzzing Platform User Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../src_code.html">Source Code Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Android Wifi Fuzzer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">target.target_monitor</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for target.target_monitor</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Target Monitor Module</span>
+<span class="sd">-------------------</span>
+<span class="sd">Provides monitoring capabilities for the Android target device.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adb_shell.auth.keygen</span><span class="w"> </span><span class="kn">import</span> <span class="n">keygen</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adb_shell.auth.sign_pythonrsa</span><span class="w"> </span><span class="kn">import</span> <span class="n">PythonRSASigner</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adb_shell.adb_device</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdbDeviceUsb</span>
+
+
+<div class="viewcode-block" id="Target_Monitor">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.Target_Monitor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Target_Monitor</span><span class="p">(</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracker</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stay_alive</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adb_key_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)),</span>
+            <span class="s1">&#39;.android/adbkey&#39;</span>
+        <span class="p">)</span>  <span class="c1"># TODO: this should probably be configurable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">executor</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_cpu</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_ram</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span> <span class="o">=</span> <span class="n">tracker</span>
+
+<div class="viewcode-block" id="Target_Monitor.get_adb_signer">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.Target_Monitor.get_adb_signer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_adb_signer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PythonRSASigner</span><span class="p">:</span>
+        <span class="c1"># create dir and keys if needed</span>
+        <span class="n">key_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adb_key_path</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">key_dir</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key_dir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">key_dir</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adb_key_path</span><span class="p">):</span>
+            <span class="n">keygen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adb_key_path</span><span class="p">)</span>
+        <span class="c1"># read the pub and priv key info</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adb_key_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">priv</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adb_key_path</span> <span class="o">+</span> <span class="s1">&#39;.pub&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pub</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="c1"># return the rsa signer</span>
+        <span class="k">return</span> <span class="n">PythonRSASigner</span><span class="p">(</span><span class="n">pub</span><span class="p">,</span> <span class="n">priv</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Target_Monitor.adb_connect">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.Target_Monitor.adb_connect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">adb_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">adb_signer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_adb_signer</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">: Requesting connection to device&#39;</span><span class="p">)</span>
+        <span class="c1"># Ensure device is initialized before connecting</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">:</span>
+            <span class="c1"># Assuming AdbDeviceUsb() should be initialized if None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">AdbDeviceUsb</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">rsa_keys</span><span class="o">=</span><span class="p">[</span><span class="n">adb_signer</span><span class="p">],</span> <span class="n">auth_timeout_s</span><span class="o">=</span><span class="mf">15.0</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">: Connected&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Target_Monitor.get_device_ip">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.Target_Monitor.get_device_ip">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_device_ip</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the IP address of the connected Android device.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The IP address of the device, or None if not available</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Try to get WiFi IP address using ip command</span>
+            <span class="n">cmd_ip</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;ip addr show wlan0 | grep &#39;inet &#39; |&quot;</span>
+                      <span class="s2">&quot; cut -d&#39; &#39; -f6 | cut -d/ -f1&quot;</span><span class="p">)</span>
+            <span class="n">wifi_ip</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="o">.</span><span class="n">adb_exec</span><span class="p">(</span><span class="n">cmd_ip</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">wifi_ip</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">wifi_ip</span>
+
+            <span class="c1"># If that fails, try using ifconfig command</span>
+            <span class="n">cmd_ifconfig</span> <span class="o">=</span> <span class="s2">&quot;ifconfig wlan0 | grep &#39;inet addr&#39;&quot;</span>
+            <span class="n">ip_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="o">.</span><span class="n">adb_exec</span><span class="p">(</span><span class="n">cmd_ifconfig</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">ip_info</span> <span class="ow">and</span> <span class="s2">&quot;inet addr:&quot;</span> <span class="ow">in</span> <span class="n">ip_info</span><span class="p">:</span>
+                <span class="c1"># Extract IP from output like &quot;inet addr:192.168.1.100  Bcast:192.168.1.255  Mask:255.255.255.0&quot;</span>
+                <span class="k">return</span> <span class="n">ip_info</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="c1"># Try using the dumpsys command</span>
+            <span class="n">cmd_dumpsys</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;dumpsys connectivity | grep &#39;IPv4 address&#39; |&quot;</span>
+                           <span class="s2">&quot; cut -d&#39; &#39; -f3&quot;</span><span class="p">)</span>
+            <span class="n">dumpsys_ip</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="o">.</span><span class="n">adb_exec</span><span class="p">(</span><span class="n">cmd_dumpsys</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">dumpsys_ip</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">dumpsys_ip</span>
+
+            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># If no IP found</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error getting device IP: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="Target_Monitor.track_errors">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.Target_Monitor.track_errors">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">track_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Monitors target device for errors involving</span>
+<span class="sd">        fatal signals or strained resource pressure.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="c1"># Parse for error signals - ANR, Native Crashes, SIGSEV, FATAL, WTF</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parse_fatals</span><span class="p">()</span>
+        <span class="c1"># Monitor resource pressures - CPU, RAM, Memory Leakages,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_resources</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_fatals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cmd_logcat</span> <span class="o">=</span> <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;logcat -d | grep -i -E &#39;fatal signal|fatal exception|anr in|&quot;</span>
+                          <span class="s2">&quot;sigsegv|sigabrt|sigbus|java</span><span class="se">\\</span><span class="s2">.lang</span><span class="se">\\</span><span class="s2">.(runtime|nullpointer|&quot;</span>
+                          <span class="s2">&quot;illegalstate)exception&#39; | grep -v &#39;phenotypemodule&#39; |&quot;</span>
+                          <span class="s2">&quot; grep -v &#39;com.google.android.gms&#39; | grep -v &#39;gms</span><span class="se">\\</span><span class="s2">.chimera&#39; |&quot;</span>
+                          <span class="s2">&quot; grep -i -v &#39;managedchannel&#39;&quot;</span><span class="p">)</span>
+            <span class="n">logcat_dump</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="o">.</span><span class="n">adb_exec</span><span class="p">(</span><span class="n">cmd_logcat</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">logcat_dump</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">logcat_dump</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span> <span class="s2">&quot;Fatal Error&quot;</span><span class="p">,</span> <span class="n">item</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parse Fatals error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_monitor_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cmd_cpu</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;top -n 1 | grep -i &#39;cpu&#39;&quot;</span><span class="p">)</span>
+            <span class="n">cpu_dump</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="o">.</span><span class="n">adb_exec</span><span class="p">(</span><span class="n">cmd_cpu</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">cpu_usage</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cpu_dump</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;</span><span class="si">%i</span><span class="s1">dle&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="n">cmd_mem</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;dumpsys meminfo | grep -i &#39;ram&#39;&quot;</span><span class="p">)</span>
+            <span class="n">mem_dump</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="o">.</span><span class="n">adb_exec</span><span class="p">(</span><span class="n">cmd_mem</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">mem_total</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">mem_used</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">mem_dump</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+                <span class="k">if</span> <span class="s2">&quot;Total RAM&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="n">clean_line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                    <span class="n">mem_total</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">clean_line</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;K&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+                <span class="k">if</span> <span class="s2">&quot;Used RAM&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="n">clean_line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                    <span class="n">mem_used</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">clean_line</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;K&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">mem_total</span> <span class="ow">and</span> <span class="n">mem_used</span><span class="p">:</span>
+                <span class="n">ram_usage_percentage</span> <span class="o">=</span> <span class="p">(</span><span class="n">mem_used</span> <span class="o">/</span> <span class="n">mem_total</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ram_usage_percentage</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">spike_threshold</span> <span class="o">=</span> <span class="mf">1.2</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_cpu</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_ram</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">base_cpu</span> <span class="o">=</span> <span class="n">cpu_usage</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">base_ram</span> <span class="o">=</span> <span class="n">ram_usage_percentage</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_cpu</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_ram</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cpu_usage</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_cpu</span> <span class="o">*</span> <span class="n">spike_threshold</span> <span class="ow">or</span> <span class="n">ram_usage_percentage</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_ram</span> <span class="o">*</span> <span class="n">spike_threshold</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span> <span class="s2">&quot;Resource Pressure&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;CPU: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cpu</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">cpu_usage</span><span class="si">}</span><span class="s2">, RAM: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_ram</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">ram_usage_percentage</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parse Fatals error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Target_Monitor.run">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.Target_Monitor.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># connect to the phone</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">AdbDeviceUsb</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">adb_connect</span><span class="p">()</span>
+            <span class="c1"># Correctly initialize ADB_Executor after successful connection</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">executor</span> <span class="o">=</span> <span class="n">ADB_Executor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">: Failed to connect to Android Device&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="c1"># Clean up device if connection failed partially</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">close_e</span><span class="p">:</span>
+                    <span class="c1"># Log error during cleanup if necessary</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error closing device during initial connection failure: </span><span class="si">{</span><span class="n">close_e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># run loop for thread</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stay_alive</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="n">check</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stay_alive</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                <span class="n">current_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">-</span> <span class="n">check</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">track_errors</span><span class="p">()</span>
+                    <span class="n">check</span> <span class="o">=</span> <span class="n">current_time</span>
+                <span class="c1"># Just sleep a short time to prevent CPU spinning</span>
+                <span class="c1"># Consider adding a check for device availability here</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stay_alive</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Keyboard interrupt in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+            <span class="c1"># self.kill() is called in finally block</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># Ensure resources are cleaned up</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>  <span class="c1"># Set flag to stop</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">: Closing ADB connection.&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error closing device on exit: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Target_Monitor.kill">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.Target_Monitor.kill">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">: Stopping thread.&#39;</span><span class="p">)</span>  <span class="c1"># Added for clarity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stay_alive</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ADB_Executor">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.ADB_Executor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ADB_Executor</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
+        <span class="c1"># Removed the call to command_stream() that was blocking execution</span>
+
+<div class="viewcode-block" id="ADB_Executor.adb_exec">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.ADB_Executor.adb_exec">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">adb_exec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute an ADB command and return the result as a string.&quot;&quot;&quot;</span>
+        <span class="c1"># Add basic error handling and timeout</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">shell</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">timeout_s</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span>  <span class="c1"># Added timeout</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error executing ADB command &#39;</span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># Return empty string on error</span></div>
+
+
+<div class="viewcode-block" id="ADB_Executor.command_stream">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.ADB_Executor.command_stream">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">command_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Interactive command stream for manual ADB command execution.</span>
+<span class="sd">        This method should be called explicitly when needed, not automatically.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Device not available for command stream.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting ADB command stream. Type &#39;exit&#39; to quit.&quot;</span><span class="p">)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Enter command: &quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cmd</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;exit&#39;</span><span class="p">:</span>  <span class="c1"># Case-insensitive exit</span>
+                    <span class="k">break</span>
+                <span class="k">if</span> <span class="n">cmd</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;get status&#39;</span><span class="p">:</span>  <span class="c1"># Case-insensitive status</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">get_phone_stats</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">cmd</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>  <span class="c1"># Only execute if command is not empty</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adb_exec</span><span class="p">(</span><span class="n">cmd</span><span class="p">))</span>
+                <span class="c1"># else: ignore empty input</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">EOFError</span><span class="p">,</span> <span class="ne">KeyboardInterrupt</span><span class="p">):</span>  <span class="c1"># Handle Ctrl+D and Ctrl+C</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Exiting command stream.&quot;</span><span class="p">)</span>
+                <span class="k">break</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;An error occurred in command stream: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># Decide if you want to break or continue on other errors</span>
+                <span class="c1"># break # Uncomment to exit loop on any error</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Exiting stream...&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ADB_Executor.get_phone_stats">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.ADB_Executor.get_phone_stats">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_phone_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get basic phone stats like battery information.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Device not available for get_phone_stats.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">battery_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">adb_exec</span><span class="p">(</span><span class="s1">&#39;dumpsys battery&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Battery info:&quot;</span><span class="p">)</span>
+        <span class="n">keywords</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;level&quot;</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">,</span> <span class="s2">&quot;health&quot;</span><span class="p">,</span> <span class="s2">&quot;present&quot;</span><span class="p">,</span> <span class="s2">&quot;powered&quot;</span><span class="p">]</span>
+        <span class="n">found_info</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">battery_info</span><span class="p">:</span>  <span class="c1"># Check if command returned anything</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">battery_info</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+                <span class="n">stripped_line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="c1"># Check if line starts with any keyword</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">stripped_line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">stripped_line</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">found_info</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">found_info</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Relevant battery info not found or command failed.&quot;</span><span class="p">)</span></div>
+</div>
+
+        <span class="c1"># return  # Implicit None return is fine</span>
+
+
+<div class="viewcode-block" id="Correlator">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.Correlator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Correlator</span><span class="p">(</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p_tracker</span><span class="p">,</span> <span class="n">a_tracker</span><span class="p">,</span> <span class="n">logdir</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stay_alive</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">packet_tracker</span> <span class="o">=</span> <span class="n">p_tracker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">anomaly_tracker</span> <span class="o">=</span> <span class="n">a_tracker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">match_window</span> <span class="o">=</span> <span class="n">window</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">anomaly_ctr</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">logdir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Must provide directory&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">logdir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">logdir</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">logdir</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Correlator.correlate_trackers">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.Correlator.correlate_trackers">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">correlate_trackers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compares queue of flagged anomalies/errors detected from device</span>
+<span class="sd">        with log of packets sent in a certain timeframe to which is then</span>
+<span class="sd">        forwarded to a log file of the error and potential damage-inducing packets&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anomaly_tracker</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">anomaly_ctr</span><span class="p">:</span>
+            <span class="n">anomaly_history</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anomaly_tracker</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">anomaly_ctr</span><span class="p">:]</span>
+            <span class="n">packet_history</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">packet_tracker</span><span class="p">)[</span><span class="o">-</span><span class="mi">100</span><span class="p">:]</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">anomaly</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">anomaly_history</span><span class="p">):</span>
+                <span class="n">log_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">anomaly_ctr</span> <span class="o">+</span> <span class="n">idx</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;anomaly</span><span class="si">{</span><span class="n">log_idx</span><span class="si">}</span><span class="s2">.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+                    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Time Detected: </span><span class="si">{</span><span class="n">anomaly</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Type: </span><span class="si">{</span><span class="n">anomaly</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">anomaly</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="se">\n\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">packet</span> <span class="ow">in</span> <span class="n">packet_history</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">anomaly</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">match_window</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span> <span class="o">&lt;=</span> \
+                                <span class="n">packet</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">anomaly</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">match_window</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)):</span>
+                            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">packet</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> @ </span><span class="si">{</span><span class="n">packet</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">packet</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">anomaly_ctr</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anomaly_tracker</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Correlator.run">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.Correlator.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stay_alive</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stay_alive</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">correlate_trackers</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stay_alive</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">match_window</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Keyboard interrupt in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Correlator.kill">
+<a class="viewcode-back" href="../../target.html#target.target_monitor.Correlator.kill">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stay_alive</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+</div>
+
+
+
+<span class="c1"># Optional: Add main execution block for testing</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting Target Monitor...&quot;</span><span class="p">)</span>
+    <span class="n">monitor</span> <span class="o">=</span> <span class="n">Target_Monitor</span><span class="p">()</span>
+    <span class="n">monitor</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Keep the main thread alive so the monitor can run</span>
+        <span class="c1"># Use join to wait for the monitor thread to complete</span>
+        <span class="n">monitor</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Shutdown requested. Stopping monitor thread...&quot;</span><span class="p">)</span>
+        <span class="n">monitor</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+        <span class="c1"># Wait for the thread to fully stop and clean up</span>
+        <span class="n">monitor</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Target Monitor stopped.&quot;</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Garrett Hurst, Ron Bejerano, Shashwat Misra.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
